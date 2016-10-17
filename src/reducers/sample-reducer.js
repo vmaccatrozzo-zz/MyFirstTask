@@ -6,7 +6,6 @@ const initialState = {
 };
 
 export default function(state=initialState, action) {
-	
 	switch (action.type) {
 		
 		case "RECEIVE_URL":
@@ -15,15 +14,15 @@ export default function(state=initialState, action) {
 				...state,
 				data: action.data
 			};
+			
 		case "SELECT_VALUE":
-		  if (state.id !== action.id) {
-			return state
-		  }
-
-		  return Object.assign({}, state, {
-			selected: !state.selected
-		  });
-		
+			
+		  	var x = Object.assign({}, state, {
+				data: state.data.slice(0, action.key)
+				.concat([[state.data[action.key][0], state.data[action.key][1], state.data[action.key][2], !state.data[action.key][3]]])
+				.concat(state.data.slice((action.key*1)+1))
+		  	});
+		  	return x;
 	}
 
 	return state;

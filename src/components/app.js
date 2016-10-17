@@ -11,7 +11,7 @@ class App extends React.Component {
 			return (<div>
 					<form >
 						<label>Resource URL: <input type="text" id ="input_url" defaultValue="http://viaf.org/viaf/97105654"></input></label>
-						<button onClick={this.props.onSampleClick}>
+						<button onClick={this.props.onSampleClick} className='btn btn-primary btn-md'>
 							Search
 						</button>	
 					</form>
@@ -21,21 +21,7 @@ class App extends React.Component {
 			return (
 				<div>
 					<form id = 'result'>
-						<table>
-							<thead>
-								<tr>
-									<th width = '40%'>Property</th>
-									<th width = '40%'>Object</th>
-									<th width = '20%'>Provenance</th>
-								</tr>
-							</thead>
-							<tbody>
-								{this.props.myTableRows.map((result) => (
-								
-									<PropValue {...result}/>
-								))}
-							</tbody>
-						</table>
+						<PropValueList propValues={this.props.myTableRows} onValueClick={this.props.onValueClick} />
 					</form>
 				</div>
 			);

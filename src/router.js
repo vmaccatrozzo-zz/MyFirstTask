@@ -16,14 +16,14 @@ var urls = {
 export function navigateTo(key, args) {
 	hashHistory.push(urls[key].apply(null, args));
 }
-    
+
 function makeViewModel(state) {
 	var myTableRows = [];
  	for (var key in state.sample.data){
- 		var item = state.sample.data[key];
- 		var row = { key:key, property: item[0], value: item[1], provenance: item[2], selected: item[3]}
- 		myTableRows.push(row)
- 		}
+ 		 var item = state.sample.data[key];
+ 		 var row = {key:key, property: item[0], value: item[1], provenance: item[2], selected: item[3]}
+ 		 myTableRows.push(row)
+ 	}
 	return {
  		myTableRows: myTableRows
 	}
