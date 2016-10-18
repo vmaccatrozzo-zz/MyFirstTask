@@ -21,7 +21,7 @@ function makeViewModel(state) {
 	var myTableRows = [];
  	for (var key in state.sample.data){
  		 var item = state.sample.data[key];
- 		 var row = {key:key, property: item[0], value: item[1], provenance: item[2], selected: item[3]}
+ 		 var row = {key:key, property: item[0], object: item[1], provenance: item[2], selected: item[3], property_uri:item[4], object_uri: item[5], subject_uri: item[6]}
  		 myTableRows.push(row)
  	}
 	return {

@@ -1,17 +1,14 @@
 import React, { PropTypes } from 'react'
 import PropValue from './PropValue'
 
-const PropValueList = ({ propValues , onValueClick}) => {console.log(propValues); return(
+const PropValueList = ({ propValues , onValueClick}) => {return(
 	
-	<table style={{width:'100%'}}>
-		<thead>
-			<tr>
-				<th width = '40%'>Property</th>
-				<th width = '40%'>Object</th>
-				<th width = '20%'>Provenance</th>
-			</tr>
-		</thead>
-		<tbody>
+	<div className="container-fluid" id='form-result'>
+		<div className="row">
+				<div className="col-md-4"><h2>Property</h2></div>
+				<div className="col-md-4"><h2>Object</h2></div>
+				<div className="col-md-4"><h2>Provenance</h2></div>
+		</div>
 		{propValues.map ( propvalue =>
 			<PropValue
 			key={propvalue.key}
@@ -19,14 +16,13 @@ const PropValueList = ({ propValues , onValueClick}) => {console.log(propValues)
  			onClick={() => onValueClick(propvalue.key)}
 		  />
 		)}
-		</tbody>
-	</table>
+	</div>
 )};
 	
 PropValueList.propTypes={
 	propValues:PropTypes.arrayOf(PropTypes.shape({
 	onCLick: PropTypes.func,
-	value: PropTypes.string.isRequired,
+	object: PropTypes.string.isRequired,
 	property: PropTypes.string.isRequired,
 	provenance: PropTypes.string.isRequired,
 	selected: PropTypes.bool.isRequired

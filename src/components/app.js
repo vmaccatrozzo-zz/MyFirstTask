@@ -6,7 +6,7 @@ import PropValue from './PropValue';
 
 class App extends React.Component {
 	render() {
-	 	console.log(this.props.myTableRows);
+	 	// console.log(this.props.myTableRows);
 		if (this.props.myTableRows.length == 0) {
 			return (<div>
 					<form >
@@ -19,11 +19,19 @@ class App extends React.Component {
 					)
 		}else{
 			return (
-				<div>
+				
 					<form id = 'result'>
+						<button  onClick={this.props.uploadData} className='btn btn-primary btn-md'>
+							Upload
+						</button>	
 						<PropValueList propValues={this.props.myTableRows} onValueClick={this.props.onValueClick} />
+						<div className="form-group text-right">
+							<button  onClick={this.props.uploadData} className='btn btn-primary btn-md'>
+								Upload
+							</button>	
+						</div>
 					</form>
-				</div>
+				
 			);
  		}
 	}

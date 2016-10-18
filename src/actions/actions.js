@@ -1,5 +1,27 @@
+function pushTriple(triples_array, id, property, object, provenance,property_uri, object_uri,subject_uri){
+			triples_array[id] = new Array;
+			triples_array[id].push(property) ;
+			triples_array[id].push(object) ;
+			triples_array[id].push(provenance);
+			triples_array[id].push(false);
+			triples_array[id].push(property_uri);
+			triples_array[id].push(object_uri);
+			triples_array[id].push(subject_uri);
+			return triples_array
+		}
+function strMapToObj(strMap) {
+        let obj = Object.create(null);
+        for (let [k,v] of strMap) {
+            // We don’t escape the key '__proto__'
+            // which can cause problems on older engines
+            obj[k] = v;
+        }
+        return obj;
+    }
+
 export default function (navigateTo, dispatch) {
 	return {
+		
 		onSampleClick: function(url_complete) {
 			var url = document.getElementById('input_url').value;
 			var url_complete = '';
@@ -47,41 +69,31 @@ export default function (navigateTo, dispatch) {
 						var unique_objects=[]
 						for(var ii=0; ii<objects.length; ii++){
 							var object = objects[ii];
-							if (!(prop == 'http://schema.org/name' | prop =="http://schema.org/sameAs" |prop == 'http://www.w3.org/2000/01/rdf-schema#comment' |prop=='http://purl.org/dc/terms/identifier')){
-								if(unique_objects.indexOf(object.value)==-1) {
-									unique_objects.push(object.value)
-								var parts = prop.split('/');
-									if (parts[parts.length-1].indexOf('#') != -1){
-										var parts = parts[parts.length-1].split('#')
+							var object_parts = 	object.value.split("/");
+							var parts = prop.split('/');
+							if (parts[parts.length-1].indexOf('#') != -1){
+								parts = parts[parts.length-1].split('#')
+							}
+							if (!(prop =="http://schema.org/sameAs" |prop == 'http://www.w3.org/2000/01/rdf-schema#comment' |prop=='http://purl.org/dc/terms/identifier')){
+								if (object.lang){
+									if (object.lang=='en'){
+										if(unique_objects.indexOf(object.value)==-1){
+											unique_objects.push(object.value)
+											primary_data = pushTriple(primary_data,id,parts[parts.length-1],object_parts[object_parts.length-1],'viaf',prop,object.value,url)
+											id ++
 										}
-									if 	(! object.lang){
-										primary_data[id] = new Array;
-										primary_data[id].push(parts[parts.length-1]) ;
-										primary_data[id].push(object.value) ;
-										primary_data[id].push('viaf');
-										primary_data[id].push(true);
-										id ++
-									}else if(object.lang =='en'){
-										primary_data[id] = new Array;
-										primary_data[id].push(parts[parts.length-1]) ;
-										primary_data[id].push(object.value) ;
-										primary_data[id].push('viaf');
-										primary_data[id].push(false);
+									}	
+								}else{
+									if(unique_objects.indexOf(object.value)==-1){
+										unique_objects.push(object.value)
+										primary_data = pushTriple(primary_data,id,parts[parts.length-1],object_parts[object_parts.length-1],'viaf',prop, object.value,url)
 										id ++
 									}
-								}	
-							}
-							if (prop == 'http://schema.org/name' && object.lang =='en'){
-								var name = object.value;
-							}
+								}
+							}	
 						}
 					}
-					primary_data[id]= new Array;
-					primary_data[id].push('name');
-					primary_data[id].push(name);	
-					primary_data[id].push('viaf');
-					primary_data[id].push(false);
-					id++;
+					
 					fetcher.nowOrWhenFetched(Dbpedia_sameAs, function(ok, body, xhr) {
 						if (!ok) {
 							console.log("Oops, something happened and couldn't fetch data");
@@ -106,41 +118,75 @@ export default function (navigateTo, dispatch) {
 								
 								if(unique_objects.indexOf(object.value)==-1) {
 									unique_objects.push(object.value);
-								var parts = prop.split('/');
+									var parts = prop.split('/');
 									if (parts[parts.length-1].indexOf('#') != -1){
 										var parts = parts[parts.length-1].split('#')
 										}
-									primary_data[id] = new Array;
-									primary_data[id].push('dbpedia_'+parts[parts.length-1]) ;
-									primary_data[id].push(object.value) ;
-									primary_data[id].push('dbpedia');
-									primary_data[id].push(false);
-									id++;
+									var object_parts = 	object.value.split("/");
+									if 	(! object.lang){
+										primary_data = pushTriple(primary_data,id,parts[parts.length-1],object_parts[object_parts.length-1],'dbpedia',prop,object.value,Dbpedia_sameAs)
+										id++
+									}else if(object.lang =='en'){
+										primary_data = pushTriple(primary_data,id,parts[parts.length-1],object_parts[object_parts.length-1],'dbpedia',prop,object.value,Dbpedia_sameAs)
+										id++
+									}
 								}	
-								if (prop == 'http://dbpedia.org/ontology/abstract' && object.lang =='en'){
-									var abs = object.value;
-								}
 							}
 						}
-						primary_data[id]= new Array;
-						primary_data[id].push('dbpedia_abstract')
-						primary_data[id].push(abs);	
-						primary_data[id].push('dbpedia');
-						primary_data[id].push(false);
-						id++;
 						dispatch({type: "RECEIVE_URL", 
 								  data: primary_data
-						//			navigateTo("root")
 						})
 					})	
 				}
 			});
 
 		},
+		
 		onValueClick: function(id) {
-			console.log(id);
 		  	dispatch({type: "SELECT_VALUE", 
 					 key: id})
+		},
+
+		uploadData: function(){
+			var t = 0
+			var triples2load = new Array;
+			var data = document.getElementById('form-result').children
+			for (var i = 1; i<data.length; i++){
+				if(data[i].getAttribute('title')=='true'){
+					var child = data[i].children
+					var subjectURI = child[0].getAttribute('title')
+					var propertyURI = child[4].getAttribute('title')
+					var objectURI = child[2].getAttribute('title')
+					if (Object.keys(triples2load).indexOf(subjectURI)==-1){
+						triples2load[subjectURI] = new Map()
+					}
+					if (Object.keys(triples2load[subjectURI]).indexOf(propertyURI)==-1){
+						triples2load[subjectURI][propertyURI] = new Array
+					}
+					triples2load[subjectURI][propertyURI].push(objectURI)
+				}
+			}	
+			var jsonLDMAP = '['
+			for (var keySub in triples2load){
+				jsonLDMAP += '{"@id":"' +  keySub +'"'
+				
+				for (var keyProp in triples2load[keySub]){
+					console.log(keyProp)
+					jsonLDMAP += ',"'+ keyProp +'":['
+					for (var o =0; o  < triples2load[keySub][keyProp].length ; o++){
+						console.log(triples2load[keySub][keyProp][o])
+						jsonLDMAP += '"'+triples2load[keySub][keyProp][o] +'"'
+						if (o != triples2load[keySub][keyProp].length-1){
+							jsonLDMAP +=","
+						}else{
+							jsonLDMAP +="]"
+						}
+					}
+				}
+				jsonLDMAP +="},"
+			}
+			jsonLDMAP = jsonLDMAP.substring(0, jsonLDMAP.length - 1) + ']'
+			console.log(jsonLDMAP)
 		}
   	}
 };
