@@ -6,9 +6,9 @@ const PropValueList = ({ propValues , onValueClick, expandClick}) => {
 	
 	<div className='container-fluid' id='form-result'>
 		<div className="row-fluid" >
-			<div className='col-md-4'>Property</div>
-			<div className='col-md-4'>Object</div>
-			<div className='col-md-3'>Provenance</div>
+			<div className='col-md-4'><h2>Property</h2></div>
+			<div className='col-md-4'><h2>Object</h2></div>
+			<div className='col-md-3'><h2>Provenance</h2></div>
 			<div className='col-md-1'></div>
 		</div>		
 			
@@ -25,14 +25,14 @@ const PropValueList = ({ propValues , onValueClick, expandClick}) => {
 	
 )};
 	
-// PropValueList.propTypes={
-// 	propValues:PropTypes.objectOf(PropTypes.shape({
-// 	onCLick: PropTypes.func,
-// 	object: PropTypes.string.isRequired,
-// 	property: PropTypes.string.isRequired,
-// 	provenance: PropTypes.string.isRequired,
-// 	selected: PropTypes.bool.isRequired
-// 	}).isRequired).isRequired
-// }
+PropValueList.propTypes={
+	propValues:PropTypes.arrayOf(PropTypes.shape({
+	onCLick: PropTypes.func,
+	object: PropTypes.string.isRequired,
+	property: PropTypes.string.isRequired,
+	provenance: PropTypes.string.isRequired,
+	selected: PropTypes.bool.isRequired
+	}).isRequired).isRequired
+}
 
 export default PropValueList

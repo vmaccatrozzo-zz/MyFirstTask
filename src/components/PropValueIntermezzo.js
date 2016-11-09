@@ -30,14 +30,14 @@ const PropValueIntermezzo = ({propertyList, isExpanded, onValueClick, expandClic
 };
 
 
-// PropValueIntermezzo.propTypes={
-// 	propertyList:PropTypes.arrayOf(PropTypes.shape({
-// 	onCLick: PropTypes.func,
-// 	object: PropTypes.string.isRequired,
-// 	property: PropTypes.string.isRequired,
-// 	provenance: PropTypes.string.isRequired,
-// 	selected: PropTypes.bool.isRequired
-// 	}).isRequired).isRequired
-// }
+PropValueIntermezzo.propTypes={
+	propertyList:PropTypes.arrayOf(PropTypes.shape({
+	onCLick: PropTypes.func,
+	object: PropTypes.string.isRequired,
+	property: PropTypes.string.isRequired,
+	provenance: PropTypes.string.isRequired,
+	selected: PropTypes.bool.isRequired
+	}).isRequired).isRequired
+}
 
 export default PropValueIntermezzo
