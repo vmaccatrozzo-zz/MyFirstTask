@@ -33,20 +33,18 @@ function uniqueArray(inputArray){
 function uniqueArrayObjects(array2sort){
 	var result = new Array()
 	for(var i = 0; i < array2sort.length; i++){
-		
-		// if(array2sort[i].lang){
-		// 	if(array2sort[i].lang == 'en' & result.indexOf(array2sort[i].value == -1)){
-		// 		result.push(array2sort[i].value)
-		// 	}
-
-		// }else{
-		
-		if(result.indexOf(array2sort[i].value)== -1){
-			result.push(array2sort[i].value)
+		if(typeof array2sort[i].lang !='undefined'){
+			if(array2sort[i].lang.indexOf('en')==0){
+				if(result.indexOf(array2sort[i].value)== -1){
+					result.push(array2sort[i].value)
+				}
+			}
+		}else{
+			if(result.indexOf(array2sort[i].value)== -1){
+				result.push(array2sort[i].value)
+			}
 		}
-		// }
 	}
-	
 	return result
 }
 function getData(subject, property, objects, prov, primary_data){
@@ -111,10 +109,11 @@ export default function (navigateTo, dispatch) {
 						if (!ok) {
 							console.log("Oops, something happened and couldn't fetch data");
 						} else {
-							var s = $rdf.sym(Dbpedia_sameAs),
-							prop = store.each(s, undefined),
-							unique_prop = uniqueArray(prop);
-						
+							var s = $rdf.sym(Dbpedia_sameAs)
+							var prop = store.each(s, undefined)
+							console.log(prop.length)
+							var unique_prop = uniqueArray(prop)
+							
 							for(var i=0; i<unique_prop.length; i++){       	
 								var prop = unique_prop[i];
 								var objects = store.each(s,$rdf.sym(prop),undefined);

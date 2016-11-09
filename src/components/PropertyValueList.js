@@ -25,14 +25,14 @@ const PropValueList = ({ propValues , onValueClick, expandClick}) => {
 	
 )};
 	
-PropValueList.propTypes={
-	propValues:PropTypes.arrayOf(PropTypes.shape({
-	onCLick: PropTypes.func,
-	object: PropTypes.string.isRequired,
-	property: PropTypes.string.isRequired,
-	provenance: PropTypes.string.isRequired,
-	selected: PropTypes.bool.isRequired
-	}).isRequired).isRequired
-}
+// PropValueList.propTypes={
+// 	propValues:PropTypes.arrayOf(PropTypes.shape({
+// 	onCLick: PropTypes.func,
+// 	object: PropTypes.string.isRequired,
+// 	property: PropTypes.string.isRequired,
+// 	provenance: PropTypes.string.isRequired,
+// 	selected: PropTypes.bool.isRequired
+// 	}).isRequired).isRequired
+// }
 
 export default PropValueList
