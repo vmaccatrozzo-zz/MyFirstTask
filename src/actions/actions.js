@@ -1,23 +1,64 @@
-function pushTriple(triples_array, id, property, object, provenance,property_uri, object_uri,subject_uri){
-			triples_array[id] = new Array;
-			triples_array[id].push(property) ;
-			triples_array[id].push(object) ;
-			triples_array[id].push(provenance);
-			triples_array[id].push(false);
-			triples_array[id].push(property_uri);
-			triples_array[id].push(object_uri);
-			triples_array[id].push(subject_uri);
+const properties2skip =['http://schema.org/sameAs','http://www.w3.org/2000/01/rdf-schema#comment','http://purl.org/dc/terms/identifier']
+
+function pushTriple(triples_array, object, provenance,property_uri,subject_uri){
+			var propertyLabel = getPropertyLabel(property_uri);
+			if(Object.keys(triples_array).indexOf(propertyLabel)==-1){
+				triples_array[propertyLabel] = new Map;
+				triples_array[propertyLabel]= {list: new Array(), isExpanded: false}
+			}
+			var row = {property: propertyLabel, object: object, provenance: provenance, selected: false, property_uri:property_uri, object_uri: object, subject_uri: subject_uri}
+			triples_array[propertyLabel].list.push(row) 
 			return triples_array
 		}
-function strMapToObj(strMap) {
-        let obj = Object.create(null);
-        for (let [k,v] of strMap) {
-            // We don’t escape the key '__proto__'
-            // which can cause problems on older engines
-            obj[k] = v;
-        }
-        return obj;
-    }
+
+function getPropertyLabel(property){
+	var parts = property.split('/');
+	if (parts[parts.length-1].indexOf('#') != -1){
+		parts = parts[parts.length-1].split('#')
+	}
+	return parts[parts.length-1]
+}
+
+function uniqueArray(inputArray){
+	var outputArray = new Array()
+	for(var i=0; i<inputArray.length; i++){
+		var pro = inputArray[i];
+		if (outputArray.indexOf(pro.value)==-1){
+			outputArray.push(pro.value);
+		}
+	}
+	return outputArray
+}
+
+function uniqueArrayObjects(array2sort){
+	var result = new Array()
+	for(var i = 0; i < array2sort.length; i++){
+		
+		// if(array2sort[i].lang){
+		// 	if(array2sort[i].lang == 'en' & result.indexOf(array2sort[i].value == -1)){
+		// 		result.push(array2sort[i].value)
+		// 	}
+
+		// }else{
+		
+		if(result.indexOf(array2sort[i].value)== -1){
+			result.push(array2sort[i].value)
+		}
+		// }
+	}
+	
+	return result
+}
+function getData(subject, property, objects, prov, primary_data){
+	if (properties2skip.indexOf(property) ==-1){
+		var unique_objects = uniqueArrayObjects(objects)
+		for(var i=0; i<unique_objects.length; i++){
+			var object = unique_objects[i]
+			primary_data = pushTriple(primary_data, object, prov, property, subject)
+		}
+	}
+	return(primary_data)
+};
 
 export default function (navigateTo, dispatch) {
 	return {
@@ -25,7 +66,6 @@ export default function (navigateTo, dispatch) {
 		onSampleClick: function(url_complete) {
 			var url = document.getElementById('input_url').value;
 			var url_complete = '';
-			var id = 0;
 			if (url.indexOf('http://viaf')==0){
 				url_complete = url+'/rdf.xml';
 			}else{
@@ -37,17 +77,16 @@ export default function (navigateTo, dispatch) {
 			var OWL = $rdf.Namespace("http://www.w3.org/2002/07/owl#")
 			var SCHEMA = $rdf.Namespace("http://schema.org/")
 			var store = $rdf.graph()
-			var primary_data = new Array;
+			var primary_data = new Array();
 			var timeout = 5000 // 5000 ms timeout
 			var fetcher = new $rdf.Fetcher(store, timeout)
-			
+
 			fetcher.nowOrWhenFetched(url_complete, function(ok, body, xhr) {
 				if (!ok) {
 					console.log("Oops, something happened and couldn't fetch data");
 				} else {
 					var s = $rdf.sym(url),
-					prop = store.each(s, undefined),
-					unique_prop = [];
+					prop = store.each(s, undefined);
 			
 					var sameAs_prop = $rdf.sym("http://schema.org/sameAs");
 					var sameASes = store.each(s,sameAs_prop,undefined);
@@ -57,41 +96,15 @@ export default function (navigateTo, dispatch) {
 							var Dbpedia_sameAs = temp;
 						}
 					}
-					for(var i=0; i<prop.length; i++){
-						var pro = prop[i];
-						if (unique_prop.indexOf(pro.value)==-1){
-							unique_prop.push(pro.value);
-						}
-					}
+
+					var unique_prop = uniqueArray(prop)
+					
 					for(var i=0; i<unique_prop.length; i++){       	
 						var prop = unique_prop[i];
 						var objects = store.each(s,$rdf.sym(prop),undefined);
-						var unique_objects=[]
-						for(var ii=0; ii<objects.length; ii++){
-							var object = objects[ii];
-							var object_parts = 	object.value.split("/");
-							var parts = prop.split('/');
-							if (parts[parts.length-1].indexOf('#') != -1){
-								parts = parts[parts.length-1].split('#')
-							}
-							if (!(prop =="http://schema.org/sameAs" |prop == 'http://www.w3.org/2000/01/rdf-schema#comment' |prop=='http://purl.org/dc/terms/identifier')){
-								if (object.lang){
-									if (object.lang=='en'){
-										if(unique_objects.indexOf(object.value)==-1){
-											unique_objects.push(object.value)
-											primary_data = pushTriple(primary_data,id,parts[parts.length-1],object_parts[object_parts.length-1],'viaf',prop,object.value,url)
-											id ++
-										}
-									}	
-								}else{
-									if(unique_objects.indexOf(object.value)==-1){
-										unique_objects.push(object.value)
-										primary_data = pushTriple(primary_data,id,parts[parts.length-1],object_parts[object_parts.length-1],'viaf',prop, object.value,url)
-										id ++
-									}
-								}
-							}	
-						}
+
+						primary_data = getData(url,prop,objects,'viaf',primary_data,)
+						
 					}
 					
 					fetcher.nowOrWhenFetched(Dbpedia_sameAs, function(ok, body, xhr) {
@@ -100,75 +113,73 @@ export default function (navigateTo, dispatch) {
 						} else {
 							var s = $rdf.sym(Dbpedia_sameAs),
 							prop = store.each(s, undefined),
-							unique_prop = [];
-							for(var i=0; i<prop.length; i++){
-								var pro = prop[i];
-								if (unique_prop.indexOf(pro.value)==-1){
-									unique_prop.push(pro.value);
-								}
+							unique_prop = uniqueArray(prop);
+						
+							for(var i=0; i<unique_prop.length; i++){       	
+								var prop = unique_prop[i];
+								var objects = store.each(s,$rdf.sym(prop),undefined);
+								primary_data = getData(Dbpedia_sameAs,prop,objects,'dbpedia',primary_data)	
 							}
+							// console.log(primary_data['type'].list)
+							dispatch({type: "RECEIVE_URL", 
+									data: primary_data
+							})
 						}
-						for(var i=0; i<unique_prop.length; i++){       	
-							var prop = unique_prop[i];
-							var objects = store.each(s,$rdf.sym(prop),undefined);
-							var unique_objects=[]
-							for(var ii=0; ii<objects.length; ii++){
-				
-								var object = objects[ii];
-								
-								if(unique_objects.indexOf(object.value)==-1) {
-									unique_objects.push(object.value);
-									var parts = prop.split('/');
-									if (parts[parts.length-1].indexOf('#') != -1){
-										var parts = parts[parts.length-1].split('#')
-										}
-									var object_parts = 	object.value.split("/");
-									if 	(! object.lang){
-										primary_data = pushTriple(primary_data,id,parts[parts.length-1],object_parts[object_parts.length-1],'dbpedia',prop,object.value,Dbpedia_sameAs)
-										id++
-									}else if(object.lang =='en'){
-										primary_data = pushTriple(primary_data,id,parts[parts.length-1],object_parts[object_parts.length-1],'dbpedia',prop,object.value,Dbpedia_sameAs)
-										id++
-									}
-								}	
-							}
-						}
-						dispatch({type: "RECEIVE_URL", 
-								  data: primary_data
-						})
-					})	
+					})
 				}
 			});
 
 		},
 		
-		onValueClick: function(id) {
+		onValueClick: function (property,id) {
 		  	dispatch({type: "SELECT_VALUE", 
-					 key: id})
+			  		 property: property,
+					 id: id})
 		},
 
+		
+		expandClick: function (target){
+			var toReturn = target.substr(1);
+			dispatch({type: "EXPAND_ROWS",
+					key: toReturn})
+		},
 		uploadData: function(){
 			var t = 0
-			var triples2load = new Array;
+			var triples2load = new Array();
 			var data = document.getElementById('form-result').children
 			for (var i = 1; i<data.length; i++){
 				if(data[i].getAttribute('title')=='true'){
 					var child = data[i].children
 					var subjectURI = child[0].getAttribute('title')
-					var propertyURI = child[4].getAttribute('title')
+					var propertyURI = child[1].getAttribute('title')
 					var objectURI = child[2].getAttribute('title')
 					if (Object.keys(triples2load).indexOf(subjectURI)==-1){
 						triples2load[subjectURI] = new Map()
 					}
 					if (Object.keys(triples2load[subjectURI]).indexOf(propertyURI)==-1){
-						triples2load[subjectURI][propertyURI] = new Array
+						triples2load[subjectURI][propertyURI] = new Array()
 					}
 					triples2load[subjectURI][propertyURI].push(objectURI)
 				}
 			}	
 			var jsonLDMAP = '['
+			var subjects = Object.keys(triples2load)
 			for (var keySub in triples2load){
 				jsonLDMAP += '{"@id":"' +  keySub +'"'
+				 if(subjects.length >1){
+					jsonLDMAP += ',"http://www.w3.org/2002/07/owl#sameAs":['
+					var index = subjects.indexOf(keySub);
+					subjects.splice(index, 1);
+					for (var s = 0 ; s < subjects.length; s++){
+						if (keySub!=subjects[s]){
+							jsonLDMAP += '"' +subjects[s] +'"'
+							if (s<subjects.length-1){
+								jsonLDMAP += ','
+							}
+						}
+					}
+					jsonLDMAP += ']'
+				}
 				
 				for (var keyProp in triples2load[keySub]){
 					console.log(keyProp)
