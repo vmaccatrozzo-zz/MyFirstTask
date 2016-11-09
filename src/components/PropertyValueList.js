@@ -15,7 +15,6 @@ const PropValueList = ({ propValues , onValueClick, expandClick}) => {
 		{Object.values(propValues).map ((propValue, idx) => 
 			(<PropValueIntermezzo 
 				key = {idx}
-				id = {idx}
 				propertyList = {propValue.list}
 				isExpanded = {propValue.isExpanded}
 				onValueClick = {onValueClick}

@@ -5,6 +5,7 @@ import PropValue from './PropValue';
 
 
 class App extends React.Component {
+	
 	render() {
 		if (typeof this.props.data == 'undefined') {
 			return (<div>

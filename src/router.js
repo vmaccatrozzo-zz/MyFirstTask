@@ -18,7 +18,6 @@ export function navigateTo(key, args) {
 }
 
 function makeViewModel(state) {
-	console.log(state.sample.data)
 	return {
  		data: state.sample.data
 	}

@@ -1,7 +1,7 @@
 import React, { PropTypes } from 'react'
 import PropValue from './PropValue'
 
-const PropValueIntermezzo = ({id, propertyList, isExpanded, onValueClick, expandClick}) => { 
+const PropValueIntermezzo = ({propertyList, isExpanded, onValueClick, expandClick}) => { 
     if (!(propertyList)) {
         return null;
     }
@@ -10,10 +10,11 @@ const PropValueIntermezzo = ({id, propertyList, isExpanded, onValueClick, expand
             <PropValue
                 {...propertyList[0]}
                 hasExpandButton={propertyList.length > 1}
-                onClick={() => onValueClick(propertyList[0].property,id)}
-                onButtonClick={() => expandClick('#'+propertyList[0].property)}
+                button_type = {isExpanded ? "glyphicon glyphicon-minus":"glyphicon glyphicon-plus"}
+                onClick={() => onValueClick(propertyList[0].property,0)}
+                onButtonClick={() => expandClick(propertyList[0].property)}
             />
-            <div className={`collapse ${isExpanded ? "out" : "in"}`} id={propertyList[0].property} >
+            <div className={`collapse ${isExpanded ? "in" : "out"}`} id={propertyList[0].property} >
                     {propertyList.map ( (propvalue, idx) => 
                         idx === 0 ? null :
                             <PropValue

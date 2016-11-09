@@ -138,15 +138,15 @@ export default function (navigateTo, dispatch) {
 		},
 
 		
-		expandClick: function (target){
-			var toReturn = target.substr(1);
+		expandClick: function (property){
 			dispatch({type: "EXPAND_ROWS",
-					key: toReturn})
+					property: property,})
 		},
+
 		uploadData: function(){
 			var t = 0
 			var triples2load = new Array();
-			var data = document.getElementById('form-result').children
+			var data = document.getElementsByClassName('row fluid')
 			for (var i = 1; i<data.length; i++){
 				if(data[i].getAttribute('title')=='true'){
 					var child = data[i].children
@@ -162,6 +162,7 @@ export default function (navigateTo, dispatch) {
 					triples2load[subjectURI][propertyURI].push(objectURI)
 				}
 			}	
+			console.log(triples2load)
 			var jsonLDMAP = '['
 			var subjects = Object.keys(triples2load)
 			for (var keySub in triples2load){
@@ -182,10 +183,10 @@ export default function (navigateTo, dispatch) {
 				}
 				
 				for (var keyProp in triples2load[keySub]){
-					console.log(keyProp)
+					// console.log(keyProp)
 					jsonLDMAP += ',"'+ keyProp +'":['
 					for (var o =0; o  < triples2load[keySub][keyProp].length ; o++){
-						console.log(triples2load[keySub][keyProp][o])
+						// console.log(triples2load[keySub][keyProp][o])
 						jsonLDMAP += '"'+triples2load[keySub][keyProp][o] +'"'
 						if (o != triples2load[keySub][keyProp].length-1){
 							jsonLDMAP +=","
