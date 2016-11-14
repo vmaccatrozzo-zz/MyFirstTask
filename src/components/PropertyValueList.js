@@ -6,10 +6,10 @@ const PropValueList = ({ propValues , onValueClick, expandClick}) => {
 	
 	<div className='container-fluid' id='form-result'>
 		<div className="row-fluid" >
-			<div className='col-md-4'><h2>Property</h2></div>
-			<div className='col-md-4'><h2>Object</h2></div>
-			<div className='col-md-3'><h2>Provenance</h2></div>
-			<div className='col-md-1'></div>
+			<div className='col-md-2'><h2>Property</h2></div>
+			<div className='col-md-7'><h2>Object</h2></div>
+			<div className='col-md-2'><h2>Provenance</h2></div>
+			<div className='col-md-1'><h2></h2></div>
 		</div>		
 			
 		{Object.values(propValues).map ((propValue, idx) => 
