@@ -1,24 +1,45 @@
-const properties2skip =['http://schema.org/sameAs','http://www.w3.org/2000/01/rdf-schema#comment','http://purl.org/dc/terms/identifier']
-const ontologies = ['http://downloads.dbpedia.org/2016-04/dbpedia_2016-04.owl','http://dublincore.org/2012/06/14/dcterms.ttl','http://xmlns.com/foaf/spec/index.rdf','http://www.w3.org/2000/01/rdf-schema.rdf','http://www.w3.org/1999/02/22-rdf-syntax-ns.rdf','https://www.w3.org/2009/08/skos-reference/skos.rdf','https://www.w3.org/ns/prov-o.owl','http://www.w3.org/2002/07/owl.ttl']
-			
+const properties2skip =['http://www.w3.org/2000/01/rdf-schema#comment','http://purl.org/dc/terms/identifier']
+const ontologies = ['http://downloads.dbpedia.org/2016-04/dbpedia_2016-04.owl','http://xmlns.com/foaf/spec/index.rdf','http://www.w3.org/2000/01/rdf-schema.rdf','http://www.w3.org/1999/02/22-rdf-syntax-ns.rdf','https://www.w3.org/2009/08/skos-reference/skos.rdf','https://www.w3.org/ns/prov-o.owl','http://www.w3.org/2002/07/owl.ttl','http://dublincore.org/2012/06/14/dcterms.ttl']
+const sameAsLabels = ['sameas','seealso']	
 const $rdf = require('rdflib');
 const store = $rdf.graph()
 const timeout = 5000 // 5000 ms timeout
 const fetcher = new $rdf.Fetcher(store, timeout)
 
 
-function pushTriple(triples_array, object, provenance,property_uri,subject_uri,propertiesLabels){
-		
+function pushTriple(triples_array, object, provenance, property_uri,subject_uri,propertiesLabels){
+			
 			var propertyLabel = getPropertyLabel(property_uri,propertiesLabels)
-			if(Object.keys(triples_array).indexOf(propertyLabel)==-1){
-				triples_array[propertyLabel] = new Map;
-				triples_array[propertyLabel]= {list: new Array(), isExpanded: false}
+			if(propertyLabel == 'sameas'){
+				var hasLink = true
+				var row = {property: propertyLabel, object: object, provenance: provenance, selected: false, property_uri:property_uri, object_uri: object, subject_uri: subject_uri, hasLink: hasLink}
+				if(Object.keys(triples_array).indexOf('Other sources') == -1){
+					triples_array['Other sources'] = new Map()
+				}
+				if(Object.keys(triples_array['Other sources']).indexOf('sameas')==-1){
+					triples_array['Other sources'][propertyLabel]= {list: new Array(), isExpanded: true}
+				}
+				
+				triples_array['Other sources'][propertyLabel].list.push(row)
+			}else{
+				var hasLink = false
+			
+				if(Object.keys(triples_array).indexOf(provenance)==-1){
+					triples_array[provenance] = new Map()
+				}
+				if(Object.keys(triples_array[provenance]).indexOf(propertyLabel)==-1){
+					triples_array[provenance][propertyLabel] = new Map
+					triples_array[provenance][propertyLabel]= {list: new Array(), isExpanded: false}
+				}
+				var row = {property: propertyLabel, object: object, provenance: provenance, selected: false, property_uri:property_uri, object_uri: object, subject_uri: subject_uri, hasLink: hasLink}
+				triples_array[provenance][propertyLabel].list.push(row) 
 			}
-			var row = {property: propertyLabel, object: object, provenance: provenance, selected: false, property_uri:property_uri, object_uri: object, subject_uri: subject_uri}
-			triples_array[propertyLabel].list.push(row) 
 			return triples_array
 		}
 
+function extractSource(source){
+	return source.toString().replace(/^(.*\/\/[^\/?#]*).*$/,"$1");
+}
 function getPropertyLabel(property,propertiesLabels){
 	if((typeof (propertiesLabels)) =='undefined'){
 		var parts = property.split('/');
@@ -38,7 +59,7 @@ function getPropertyLabel(property,propertiesLabels){
 			// console.log(label)
 		}
 	}
-	return label
+	return label.toLowerCase()
 }
 
 function uniqueArray(inputArray){
@@ -70,82 +91,76 @@ function uniqueArrayObjects(array2sort){
 	return result
 }
 
-function test_fetcher(){
-	var url ='https://www.wikidata.org/wiki/Q1067'
-	fetcher.nowOrWhenFetched(url, function(ok, body, xhr) {
-		if (!ok) {
-			console.log("Oops, something happened and couldn't fetch data");
-		} else {
-			var data = store.statementsMatching($rdf.sym(url),undefined,undefined)
-			for(var t=0;t<data.length;t++){
-				console.log(data[t].subject.value)
-				console.log(data[t].object.value)
-			}
-		}
-	})
-}
-function getData(subject, property, objects, prov, primary_data,propertyLabels){	
+function getData(subject, property, objects, prov, primary_data, propertyLabels,sameAsList){	
+	
 	if (properties2skip.indexOf(property) ==-1 & property.indexOf('http://www.iana.org')!=0){
 		var unique_objects = uniqueArrayObjects(objects)
 		for(var i=0; i<unique_objects.length; i++){
 			var object = unique_objects[i]
-			primary_data = pushTriple(primary_data, object, prov, property, subject,propertyLabels)
+			primary_data = pushTriple(primary_data, object, prov, property, subject,propertyLabels,sameAsList)
 		}
 	}
 	return(primary_data)
 };
-
+// function cb(ok, body, xhr) { // dostuff(onto[idx] )}
 export default function (navigateTo, dispatch) {
+
+
+
 	return {
-		
-		onSampleClick: function(url_complete) {
+		onSampleClick: function() {
 			var url = document.getElementById('input_url').value;
 			var url_complete = '';
 			if (url.indexOf('http://viaf')==0){
 				url_complete = url+'/rdf.xml';
 			}else{
-				url_complete = url.data;
+				url_complete = url;
 			};
-			
 			var primary_data = new Array();
 			var propertiesLabels = new Map();
+			
 			// test_fetcher()
-			fetcher.nowOrWhenFetched(ontologies[0], function(ok, body, xhr) {
-				if (!ok) {
-					console.log("Oops, something happened and couldn't fetch data");
-				} else {
-					fetcher.nowOrWhenFetched(ontologies[1], function(ok, body, xhr) {
-						if (!ok) {
-							console.log("Oops, something happened and couldn't fetch data");
-						} else {
-							fetcher.nowOrWhenFetched(ontologies[2], function(ok, body, xhr) {
-								if (!ok) {
-									console.log("Oops, something happened and couldn't fetch data");
-								} else {
-									fetcher.nowOrWhenFetched(ontologies[3], function(ok, body, xhr) {
-										if (!ok) {
-											console.log("Oops, something happened and couldn't fetch data");
-										} else {
-											fetcher.nowOrWhenFetched(ontologies[4], function(ok, body, xhr) {
-												if (!ok) {
-													console.log("Oops, something happened and couldn't fetch data");
-												} else {
-													fetcher.nowOrWhenFetched(ontologies[5], function(ok, body, xhr) {
-														if (!ok) {
-															console.log("Oops, something happened and couldn't fetch data");
-														} else {
-															fetcher.nowOrWhenFetched(ontologies[6], function(ok, body, xhr) {
-																if (!ok) {
-																	console.log("Oops, something happened and couldn't fetch data");
-																} else {
-																	fetcher.nowOrWhenFetched(ontologies[7], function(ok, body, xhr) {
-																		if (!ok) {
-																			console.log("Oops, something happened and couldn't fetch data");
-																		} else {
+			// js promises
+			// fetcher.nowOrWhenFetched(ontologies[0], function(ok, body, xhr) {
+			// 	if (!ok) {
+			// 		console.log("Oops, something happened and couldn't fetch data");
+			// 	} else {
+			// 		fetcher.nowOrWhenFetched(ontologies[1], function(ok, body, xhr) {
+			// 			if (!ok) {
+			// 				console.log("Oops, something happened and couldn't fetch data");
+			// 			} else {
+			// 				fetcher.nowOrWhenFetched(ontologies[2], function(ok, body, xhr) {
+			// 					if (!ok) {
+			// 						console.log("Oops, something happened and couldn't fetch data");
+			// 					} else {
+			// 						fetcher.nowOrWhenFetched(ontologies[3], function(ok, body, xhr) {
+			// 							if (!ok) {
+			// 								console.log("Oops, something happened and couldn't fetch data");
+			// 							} else {
+			// 								fetcher.nowOrWhenFetched(ontologies[4], function(ok, body, xhr) {
+			// 									if (!ok) {
+			// 										console.log("Oops, something happened and couldn't fetch data");
+			// 									} else {
+			// 										fetcher.nowOrWhenFetched(ontologies[5], function(ok, body, xhr) {
+			// 											if (!ok) {
+			// 												console.log("Oops, something happened and couldn't fetch data");
+			// 											} else {
+			// 												fetcher.nowOrWhenFetched(ontologies[6], function(ok, body, xhr) {
+			// 													if (!ok) {
+			// 														console.log("Oops, something happened and couldn't fetch data");
+			// 													} else {
+			// 														fetcher.nowOrWhenFetched(ontologies[7], function(ok, body, xhr) {
+			// 															if (!ok) {
+			// 																console.log("Oops, something happened and couldn't fetch data");
+			// 															} else {
 																			fetcher.nowOrWhenFetched(url_complete, function(ok, body, xhr) {
 																				if (!ok) {
 																					console.log("Oops, something happened and couldn't fetch data");
+																					dispatch({type: "NO_DATA", 
+																							  data: "The url you typed is not a valid RDF resource. Please try again."
+																							})
 																				} else {
+																					
 																					var labels_data = store.statementsMatching(undefined,$rdf.sym('http://www.w3.org/2000/01/rdf-schema#label'),undefined)																
 																					for(var i = 0; i<labels_data.length; i++){
 																						if(labels_data[i].object.lang){
@@ -170,70 +185,115 @@ export default function (navigateTo, dispatch) {
 																							var Dbpedia_sameAs = temp;
 																						}
 																					}
-
+																					var prov = extractSource(url_complete)
+																					
 																					var unique_prop = uniqueArray(prop)
 																					
 																					for(var i=0; i<unique_prop.length; i++){       	
 																						var prop = unique_prop[i];
 																						var objects = store.each(s,$rdf.sym(prop),undefined);
-																						primary_data = getData(url,prop,objects,'Viaf',primary_data,propertiesLabels)
+																						primary_data = getData(url,prop,objects,prov,primary_data,propertiesLabels)
 																						
 																					}
-																					fetcher.nowOrWhenFetched(Dbpedia_sameAs, function(ok, body, xhr) {
-																						if (!ok) {
-																							console.log("Oops, something happened and couldn't fetch data");
-																						} else {
-																							var s = $rdf.sym(Dbpedia_sameAs)
-																							var unique_prop = store.each(s, undefined)
-																							
-																							for(var i=0; i<unique_prop.length; i++){     
-
-																								var prop = unique_prop[i].value;
-																								console.log(prop)
-																								var objects = store.each(s,$rdf.sym(prop),undefined);
-																								primary_data = getData(Dbpedia_sameAs,prop,objects,'DBpedia',primary_data,propertiesLabels)	
-																							}
-																							dispatch({type: "RECEIVE_URL", 
+																					
+																					
+																					if(typeof (Dbpedia_sameAs)=='undefined') {
+																						dispatch({type: "RECEIVE_URL", 
 																									data: primary_data
 																							})
-																						}
-																					})
+																					}else{
+																						fetcher.nowOrWhenFetched(Dbpedia_sameAs, function(ok, body, xhr) {
+																							if (!ok) {
+																								console.log("Oops, something happened and couldn't fetch data");
+																							} else {
+																								var s = $rdf.sym(Dbpedia_sameAs)
+																								var props = store.each(s, undefined)
+																								var unique_prop = uniqueArray(props)
+																								var prov = extractSource(Dbpedia_sameAs)
+																								var count = 0
+																								for(var i=0; i<unique_prop.length; i++){     
+																									var prop = unique_prop[i];
+																									var objects = store.each(s,$rdf.sym(prop),undefined);
+																									primary_data = getData(Dbpedia_sameAs,prop,objects,prov,primary_data,propertiesLabels)	
+																								}
+																								dispatch({type: "RECEIVE_URL", 
+																										data: primary_data
+																								})
+																							}
+																						})	
+																					}
 																				}
 																			})
-																		}
-																	})
-																}
-															})
-														}
-													})
-												}
-											})
-										}
-									})
-								}
-							})
-						}
-					})
-				}
-			})
+			// 															}
+			// 														})
+			// 													}
+			// 												})
+			// 											}
+			// 										})
+			// 									}
+			// 								})
+			// 							}
+			// 						})
+			// 					}
+			// 				})
+			// 			}
+			// 		})
+			// 	}
+			// })
 		},
 		
-		onValueClick: function (property,id) {
+		onValueClick: function (property,id,provenance) {
 		  	dispatch({type: "SELECT_VALUE", 
-			  		 property: property,
-					 id: id})
+			  		provenance: provenance,
+			  		property: property,
+					id: id})
 		},
-
+		onLinkClick: function (objectUri) {
+			
+			const store = $rdf.graph()
+			const fetcher = new $rdf.Fetcher(store, timeout)
+			var newData = new Array()
 		
-		expandClick: function (property){
+			if(objectUri.indexOf('http://www.wikidata.org')== 0){
+				var new_uri = objectUri.replace('entity','Special:EntityData')
+			}else{
+				var new_uri = objectUri
+			}
+			
+			
+			fetcher.nowOrWhenFetched(new_uri, function(ok, body, xhr) {
+				if (!ok) {
+					console.log("Oops, something happened and couldn't fetch data");
+				} else {
+					var s = $rdf.sym(new_uri)
+					var props = store.each(s, undefined)
+					var unique_prop = uniqueArray(props)
+					var prov = extractSource(new_uri)
+					for(var i=0; i<unique_prop.length; i++){    
+						var prop = unique_prop[i];
+						var objects = store.each(s,$rdf.sym(prop),undefined);
+						console.log(s.value)
+						
+						newData = getData(new_uri,prop,objects,prov,newData,[])	
+				}
+				
+				dispatch({type: "INCLUDE_NEW_SOURCE", 
+						data: newData
+						})
+					}
+				})
+		},
+		
+		expandClick: function (property,provenance){
 			dispatch({type: "EXPAND_ROWS",
-					property: property,})
+					property: property,
+					provenance: provenance})
 		},
 
 		uploadData: function(){
 			var t = 0
 			var triples2load = new Array();
-			var data = document.getElementsByClassName('row fluid')
+			var data = document.getElementsByClassName('row-fluid')
 			for (var i = 1; i<data.length; i++){
 				if(data[i].getAttribute('title')=='true'){
 					var child = data[i].children

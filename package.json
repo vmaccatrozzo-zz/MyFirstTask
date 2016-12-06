@@ -11,11 +11,14 @@
   "license": "ISC",
   "dependencies": {
     "jsonld": "^0.4.11",
+    "proxy-middleware": "^0.15.0",
     "rdflib": "^0.12.1",
+    "rdfstore": "^0.9.17",
     "react": "^15.3.2",
     "react-dom": "^15.3.2",
     "react-redux": "^4.4.5",
     "react-router": "^2.8.1",
+    "react-tabs": "^0.8.2",
     "react-thunk": "^1.0.0",
     "redux": "^3.6.0",
     "redux-thunk": "^2.1.0"

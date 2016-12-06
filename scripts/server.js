@@ -2,6 +2,7 @@
 
 var browserSync = require("browser-sync").create();
 var debounce = require("lodash.debounce");
+var proxy = require("proxy-middleware");
 
 var baseDir = "./build/development";
 var watchFiles = [
