@@ -39,8 +39,13 @@ export default function(state=initialState, action) {
 				data: newData};
 
 		case "INCLUDE_NEW_SOURCE":
+			var OldSameAs = Object.assign({}, state.data);
+			var NewSameAs = action.data['Other sources']['sameas'].list
+			for(var i=0;i<NewSameAs.length;i++){
+				OldSameAs['Other sources']['sameas'].list.push(NewSameAs[i])
+			}
 			
-			var mergedData = Object.assign({},state.data, action.data)
+			var mergedData = Object.assign({}, state.data, action.data, OldSameAs)
 			return {
 				...state,
 				data: mergedData

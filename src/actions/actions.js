@@ -6,36 +6,48 @@ const store = $rdf.graph()
 const timeout = 5000 // 5000 ms timeout
 const fetcher = new $rdf.Fetcher(store, timeout)
 
-
-function pushTriple(triples_array, object, provenance, property_uri,subject_uri,propertiesLabels){
+function sort_data(primary_data){
+	var keys = new Array()
+	var new_primary_data = new Map()
+	for(var k=0; k<Object.keys(primary_data).length; k++){
+		if(Object.keys(primary_data)[k]!='Other sources')
+			keys.push(Object.keys(primary_data)[k])
+	}
+	keys.push('Other sources')
+	for(k=0; k<keys.length; k++){
+		new_primary_data[keys[k]] = primary_data[keys[k]]
+	}
+ return new_primary_data
+}
+function pushTriple(triples_array, object, provenance, property_uri, subject_uri, propertiesLabels){
 			
-			var propertyLabel = getPropertyLabel(property_uri,propertiesLabels)
-			if(propertyLabel == 'sameas'){
-				var hasLink = true
-				var row = {property: propertyLabel, object: object, provenance: provenance, selected: false, property_uri:property_uri, object_uri: object, subject_uri: subject_uri, hasLink: hasLink}
-				if(Object.keys(triples_array).indexOf('Other sources') == -1){
-					triples_array['Other sources'] = new Map()
-				}
-				if(Object.keys(triples_array['Other sources']).indexOf('sameas')==-1){
-					triples_array['Other sources'][propertyLabel]= {list: new Array(), isExpanded: true}
-				}
-				
-				triples_array['Other sources'][propertyLabel].list.push(row)
-			}else{
-				var hasLink = false
-			
-				if(Object.keys(triples_array).indexOf(provenance)==-1){
-					triples_array[provenance] = new Map()
-				}
-				if(Object.keys(triples_array[provenance]).indexOf(propertyLabel)==-1){
-					triples_array[provenance][propertyLabel] = new Map
-					triples_array[provenance][propertyLabel]= {list: new Array(), isExpanded: false}
-				}
-				var row = {property: propertyLabel, object: object, provenance: provenance, selected: false, property_uri:property_uri, object_uri: object, subject_uri: subject_uri, hasLink: hasLink}
-				triples_array[provenance][propertyLabel].list.push(row) 
-			}
-			return triples_array
+	var propertyLabel = getPropertyLabel(property_uri,propertiesLabels)
+	if(propertyLabel == 'sameas'){
+		var hasLink = true
+		var row = {property: propertyLabel, object: object, provenance: provenance, selected: false, property_uri:property_uri, object_uri: object, subject_uri: subject_uri, hasLink: hasLink}
+		if(Object.keys(triples_array).indexOf('Other sources') == -1){
+			triples_array['Other sources'] = new Map()
 		}
+		if(Object.keys(triples_array['Other sources']).indexOf('sameas')==-1){
+			triples_array['Other sources'][propertyLabel]= {list: new Array(), isExpanded: true}
+		}
+		
+		triples_array['Other sources'][propertyLabel].list.push(row)
+	}else{
+		
+	
+		if(Object.keys(triples_array).indexOf(provenance)==-1){
+			triples_array[provenance] = new Map()
+		}
+		if(Object.keys(triples_array[provenance]).indexOf(propertyLabel)==-1){
+			triples_array[provenance][propertyLabel] = new Map
+			triples_array[provenance][propertyLabel]= {list: new Array(), isExpanded: false}
+		}
+		var row = {property: propertyLabel, object: object, provenance: provenance, selected: false, property_uri:property_uri, object_uri: object, subject_uri: subject_uri, hasLink: false}
+		triples_array[provenance][propertyLabel].list.push(row) 
+	}
+	return triples_array
+}
 
 function extractSource(source){
 	return source.toString().replace(/^(.*\/\/[^\/?#]*).*$/,"$1");
@@ -60,7 +72,7 @@ function getPropertyLabel(property,propertiesLabels){
 		}
 	}
 	return label.toLowerCase()
-}
+};
 
 function uniqueArray(inputArray){
 	var outputArray = new Array()
@@ -71,7 +83,7 @@ function uniqueArray(inputArray){
 		}
 	}
 	return outputArray
-}
+};
 
 function uniqueArrayObjects(array2sort){
 	var result = new Array()
@@ -89,7 +101,7 @@ function uniqueArrayObjects(array2sort){
 		}
 	}
 	return result
-}
+};
 
 function getData(subject, property, objects, prov, primary_data, propertyLabels,sameAsList){	
 	
@@ -97,9 +109,12 @@ function getData(subject, property, objects, prov, primary_data, propertyLabels,
 		var unique_objects = uniqueArrayObjects(objects)
 		for(var i=0; i<unique_objects.length; i++){
 			var object = unique_objects[i]
-			primary_data = pushTriple(primary_data, object, prov, property, subject,propertyLabels,sameAsList)
+			primary_data = pushTriple(primary_data, object, prov, property, subject,propertyLabels)
+			
 		}
+		
 	}
+	
 	return(primary_data)
 };
 // function cb(ok, body, xhr) { // dostuff(onto[idx] )}
@@ -198,6 +213,7 @@ export default function (navigateTo, dispatch) {
 																					
 																					
 																					if(typeof (Dbpedia_sameAs)=='undefined') {
+																						primary_data = sort_data(primary_data)
 																						dispatch({type: "RECEIVE_URL", 
 																									data: primary_data
 																							})
@@ -216,6 +232,8 @@ export default function (navigateTo, dispatch) {
 																									var objects = store.each(s,$rdf.sym(prop),undefined);
 																									primary_data = getData(Dbpedia_sameAs,prop,objects,prov,primary_data,propertiesLabels)	
 																								}
+																								
+																								primary_data = sort_data(primary_data)
 																								dispatch({type: "RECEIVE_URL", 
 																										data: primary_data
 																								})
@@ -291,24 +309,27 @@ export default function (navigateTo, dispatch) {
 		},
 
 		uploadData: function(){
-			var t = 0
 			var triples2load = new Array();
-			var data = document.getElementsByClassName('row-fluid')
-			for (var i = 1; i<data.length; i++){
-				if(data[i].getAttribute('title')=='true'){
-					var child = data[i].children
-					var subjectURI = child[0].getAttribute('title')
-					var propertyURI = child[1].getAttribute('title')
-					var objectURI = child[2].getAttribute('title')
-					if (Object.keys(triples2load).indexOf(subjectURI)==-1){
-						triples2load[subjectURI] = new Map()
+			var tabs = document.getElementsByClassName('ReactTabs__TabPanel')
+			for(var t=0;t<tabs.length;t++){
+				// console.log(tabs[t].getElementsByClassName('row-fluid'))
+				var data = tabs[t].getElementsByClassName('row-fluid')
+				for (var i = 1; i<data.length; i++){
+					if(data[i].getAttribute('title')=='true'){
+						var child = data[i].children
+						var subjectURI = child[0].getAttribute('title')
+						var propertyURI = child[1].getAttribute('title')
+						var objectURI = child[2].getAttribute('title')
+						if (Object.keys(triples2load).indexOf(subjectURI)==-1){
+							triples2load[subjectURI] = new Map()
+						}
+						if (Object.keys(triples2load[subjectURI]).indexOf(propertyURI)==-1){
+							triples2load[subjectURI][propertyURI] = new Array()
+						}
+						triples2load[subjectURI][propertyURI].push(objectURI)
 					}
-					if (Object.keys(triples2load[subjectURI]).indexOf(propertyURI)==-1){
-						triples2load[subjectURI][propertyURI] = new Array()
-					}
-					triples2load[subjectURI][propertyURI].push(objectURI)
-				}
-			}	
+				}	
+			}
 			console.log(triples2load)
 			var jsonLDMAP = '['
 			var subjects = Object.keys(triples2load)

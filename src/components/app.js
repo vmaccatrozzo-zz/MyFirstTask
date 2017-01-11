@@ -23,10 +23,11 @@ class App extends React.Component {
 				return (
 				<div className='container-fluid'>
 					<form id = 'result'>
-						<ProvTabs propValues={this.props.data} onValueClick={this.props.onValueClick} expandClick={this.props.expandClick} extraLinkClick={this.props.onLinkClick}/>
 						<div className="form-group text-right">
-							<button onClick={this.props.uploadData} className='btn btn-default'> Upload </button>	
+							<button onClick={this.props.uploadData} className='btn btn-default'> Continue </button>	
 						</div>
+						<ProvTabs propValues={this.props.data} onValueClick={this.props.onValueClick} expandClick={this.props.expandClick} extraLinkClick={this.props.onLinkClick}/>
+						
 					</form>
 				</div>
 			);

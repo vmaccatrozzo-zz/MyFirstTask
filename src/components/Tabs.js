@@ -8,13 +8,13 @@ const ProvTabs = ({ propValues , onValueClick, expandClick, extraLinkClick  }) =
     return(
         <Tabs>
             <TabList>
-                {Object.keys(propValues).map ( (key, idx) => 
-                    <Tab key = {idx}> {key} </Tab>
+                {Object.keys(propValues).map ( (tabName, idx) => 
+                    <Tab key = {idx}> {tabName} </Tab>
                 )}
             </TabList>
         
             {Object.values(propValues).map ( (propValue, idx) => 
-                <TabPanel>
+                <TabPanel key = {idx}>
                     <PropValueList 
                         key = {idx}
                         propValues = {propValue} 
