@@ -21,15 +21,15 @@ class App extends React.Component {
 					)
 		}else if (typeof this.props.data == 'object'){
 				return (
-				<div className='container-fluid'>
-					<form id = 'result'>
+				
+					<form id = 'result'  >
 						<div className="form-group text-right">
-							<button onClick={this.props.uploadData} className='btn btn-default'> Continue </button>	
+							<button type='submit'onClick={this.props.uploadData}  className='btn btn-default'> Continue </button>	
 						</div>
 						<ProvTabs propValues={this.props.data} onValueClick={this.props.onValueClick} expandClick={this.props.expandClick} extraLinkClick={this.props.onLinkClick}/>
 						
 					</form>
-				</div>
+				
 			);
 		}else{
 			return (
@@ -53,6 +53,6 @@ class App extends React.Component {
 // App.propTypes = {
 // 	myTableRows: React.PropTypes.array,
 // 	onSampleClick: React.PropTypes.func
-// };
+// };onClick={this.props.uploadData} 
 
 export default App;

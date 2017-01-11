@@ -20,19 +20,14 @@ export default function(state=initialState, action) {
 		}
 			
 		case "SELECT_VALUE":
-			// debugger;
-			
-			let newData = Object.assign({}, state.data);
-			// let property = Object.assign({},state.data[action.property])
-			// let list = Object.assign({},state.data[action.property].list)
-			// let item = Object.assign({}, state.data[action.property].list[action.id])
+			let newData = Object.assign({}, state.data)
 			newData[action.provenance][action.property].list[action.id].selected  = !state.data[action.provenance][action.property].list[action.id].selected 
 			return {
 				...state,
 				data: newData};
 
 		case "EXPAND_ROWS":
-			newData = Object.assign({}, state.data);
+			newData = Object.assign({}, state.data)
 			newData[action.provenance][action.property].isExpanded  = !state.data[action.provenance][action.property].isExpanded 
 			return {
 				...state,
@@ -50,6 +45,60 @@ export default function(state=initialState, action) {
 				...state,
 				data: mergedData
 			};
+		case "UPLOAD":
+			var triples2load = new Map;
+			newData = Object.assign({}, state.data);
+			for(var key in newData){
+				for(var key2 in newData[key]){
+					var object_list = newData[key][key2].list
+					for(var i =0; i<object_list.length; i++){
+						if(object_list[i].selected == true){
+							if(Object.keys(triples2load).indexOf(object_list[i].subject_uri) ==-1){
+								triples2load[object_list[i].subject_uri] = new Map
+							}
+							if(Object.keys(triples2load[object_list[i].subject_uri]).indexOf(object_list[i].property_uri) ==-1){
+								triples2load[object_list[i].subject_uri][object_list[i].property_uri] = new Array
+							}
+							triples2load[object_list[i].subject_uri][object_list[i].property_uri].push(object_list[i].object_uri)
+							
+						}
+					}
+				}
+			}
+			var jsonLDMAP = '['
+			var subjects = Object.keys(triples2load)
+			for (var keySub in triples2load){
+			 	jsonLDMAP += '{"@id":"' +  keySub +'"'
+				if(subjects.length >1){
+					jsonLDMAP += ',"http://www.w3.org/2002/07/owl#sameAs":['
+					var index = subjects.indexOf(keySub)
+					subjects.splice(index, 1)
+					for (var s = 0 ; s < subjects.length; s++){
+						if (keySub!=subjects[s]){
+							jsonLDMAP += '"' +subjects[s] +'"'
+							if (s<subjects.length-1){
+								jsonLDMAP += ','
+							}
+						}
+					}
+					jsonLDMAP += ']'
+				}
+				
+				for (var keyProp in triples2load[keySub]){
+					jsonLDMAP += ',"'+ keyProp +'":['
+					for (var o =0; o  < triples2load[keySub][keyProp].length ; o++){
+						jsonLDMAP += '"'+triples2load[keySub][keyProp][o] +'"'
+						if (o != triples2load[keySub][keyProp].length-1){
+							jsonLDMAP +=","
+						}else{
+							jsonLDMAP +="]"
+						}
+					}
+				}
+				jsonLDMAP +="},"
+			}
+			jsonLDMAP = jsonLDMAP.substring(0, jsonLDMAP.length - 1) + "]"
+			console.log(jsonLDMAP)	 
 	}
 
 	return state;

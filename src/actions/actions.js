@@ -309,65 +309,48 @@ export default function (navigateTo, dispatch) {
 		},
 
 		uploadData: function(){
-			var triples2load = new Array();
-			var tabs = document.getElementsByClassName('ReactTabs__TabPanel')
-			for(var t=0;t<tabs.length;t++){
-				// console.log(tabs[t].getElementsByClassName('row-fluid'))
-				var data = tabs[t].getElementsByClassName('row-fluid')
-				for (var i = 1; i<data.length; i++){
-					if(data[i].getAttribute('title')=='true'){
-						var child = data[i].children
-						var subjectURI = child[0].getAttribute('title')
-						var propertyURI = child[1].getAttribute('title')
-						var objectURI = child[2].getAttribute('title')
-						if (Object.keys(triples2load).indexOf(subjectURI)==-1){
-							triples2load[subjectURI] = new Map()
-						}
-						if (Object.keys(triples2load[subjectURI]).indexOf(propertyURI)==-1){
-							triples2load[subjectURI][propertyURI] = new Array()
-						}
-						triples2load[subjectURI][propertyURI].push(objectURI)
-					}
-				}	
-			}
-			console.log(triples2load)
-			var jsonLDMAP = '['
-			var subjects = Object.keys(triples2load)
-			for (var keySub in triples2load){
-				jsonLDMAP += '{"@id":"' +  keySub +'"'
-				 if(subjects.length >1){
-					jsonLDMAP += ',"http://www.w3.org/2002/07/owl#sameAs":['
-					var index = subjects.indexOf(keySub);
-					subjects.splice(index, 1);
-					for (var s = 0 ; s < subjects.length; s++){
-						if (keySub!=subjects[s]){
-							jsonLDMAP += '"' +subjects[s] +'"'
-							if (s<subjects.length-1){
-								jsonLDMAP += ','
-							}
-						}
-					}
-					jsonLDMAP += ']'
-				}
-				
-				for (var keyProp in triples2load[keySub]){
-					// console.log(keyProp)
-					jsonLDMAP += ',"'+ keyProp +'":['
-					for (var o =0; o  < triples2load[keySub][keyProp].length ; o++){
-						// console.log(triples2load[keySub][keyProp][o])
-						jsonLDMAP += '"'+triples2load[keySub][keyProp][o] +'"'
-						if (o != triples2load[keySub][keyProp].length-1){
-							jsonLDMAP +=","
-						}else{
-							jsonLDMAP +="]"
-						}
-					}
-				}
-				jsonLDMAP +="},"
-			}
-			jsonLDMAP = jsonLDMAP.substring(0, jsonLDMAP.length - 1) + ']'
-			console.log(jsonLDMAP)
+			dispatch({type: "UPLOAD"})
 		}
+	
+
+			
+			// var jsonLDMAP = '['
+			// var subjects = Object.keys(triples2load)
+			// for (var keySub in triples2load){
+			// 	jsonLDMAP += '{"@id":"' +  keySub +'"'
+			// 	 if(subjects.length >1){
+			// 		jsonLDMAP += ',"http://www.w3.org/2002/07/owl#sameAs":['
+			// 		var index = subjects.indexOf(keySub)
+			// 		subjects.splice(index, 1)
+			// 		for (var s = 0 ; s < subjects.length; s++){
+			// 			if (keySub!=subjects[s]){
+			// 				jsonLDMAP += '"' +subjects[s] +'"'
+			// 				if (s<subjects.length-1){
+			// 					jsonLDMAP += ','
+			// 				}
+			// 			}
+			// 		}
+			// 		jsonLDMAP += ']'
+			// 	}
+				
+			// 	for (var keyProp in triples2load[keySub]){
+			// 		// console.log(keyProp)
+			// 		jsonLDMAP += ',"'+ keyProp +'":['
+			// 		for (var o =0; o  < triples2load[keySub][keyProp].length ; o++){
+			// 			// console.log(triples2load[keySub][keyProp][o])
+			// 			jsonLDMAP += '"'+triples2load[keySub][keyProp][o] +'"'
+			// 			if (o != triples2load[keySub][keyProp].length-1){
+			// 				jsonLDMAP +=","
+			// 			}else{
+			// 				jsonLDMAP +="]"
+			// 			}
+			// 		}
+			// 	}
+			// 	jsonLDMAP +="},"
+			// }
+			// jsonLDMAP = jsonLDMAP.substring(0, jsonLDMAP.length - 1) + "]"
+			// console.log(jsonLDMAP)
+		
   	}
 };
 
