@@ -29,6 +29,7 @@ export default function(state=initialState, action) {
 		case "EXPAND_ROWS":
 			newData = Object.assign({}, state.data)
 			newData[action.provenance][action.property].isExpanded  = !state.data[action.provenance][action.property].isExpanded 
+			newData[action.provenance][action.property].list[0].selected  = !newData[action.provenance][action.property].list[0].selected
 			return {
 				...state,
 				data: newData};
@@ -60,7 +61,6 @@ export default function(state=initialState, action) {
 								triples2load[object_list[i].subject_uri][object_list[i].property_uri] = new Array
 							}
 							triples2load[object_list[i].subject_uri][object_list[i].property_uri].push(object_list[i].object_uri)
-							
 						}
 					}
 				}
