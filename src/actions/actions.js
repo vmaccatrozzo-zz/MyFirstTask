@@ -4,12 +4,13 @@ const $rdf = require('rdflib');
 const store = $rdf.graph()
 const timeout = 5000 // 5000 ms timeout
 const fetcher = new $rdf.Fetcher(store, timeout)
+const uploadedSources = new Array
 
 
 function pushTriple(triples_array, object, provenance, property_uri, subject_uri, propertiesLabels){
 			
 	var propertyLabel = getPropertyLabel(property_uri,propertiesLabels)
-	if(propertyLabel=='sameas'){
+	if(propertyLabel=='sameas' & uploadedSources.indexOf(object)==-1){
 		var hasLink = true
 		var row = {property: propertyLabel, object: object, provenance: provenance, selected: false, property_uri:property_uri, object_uri: object, subject_uri: subject_uri, hasLink: hasLink}
 		if(Object.keys(triples_array).indexOf('Other sources') == -1){
@@ -43,18 +44,27 @@ function pushTriple(triples_array, object, provenance, property_uri, subject_uri
 	return triples_array
 }
 
-function groupOtherSourcesDuplicates(dataArray){
-	
-	var keys = Object.keys(dataArray['Other sources'])
+function removeUploadedSource(dataArray){
+	var keys = Object.keys(dataArray['Other sources']['sameas'])
 	for(var k = 0; k<keys.length; k++){
-		var propertyLabel = dataArray['Other sources'][k]
-		for(var p = 0; p<propertyLabel.length; p++)	{
-
+		var dataList = dataArray['Other sources']['sameas'][keys[k]]
+		for(var d = 0; d < dataList.length; d++){
+			if(uploadedSources.indexOf(dataArray['Other sources']['sameas'][keys[k]][d].object)!=-1){
+				dataArray['Other sources']['sameas'][keys[k]].splice(d, 1)
+			}		
 		}
 	}
-
+	
+	return(dataArray)
 }
+
 function extractSource(source){
+	if (source.indexOf('http://viaf')==0){
+		source = source.split('/rdf.xml')[0]
+	}
+	if(uploadedSources.indexOf(source)==-1){
+		uploadedSources.push(source)
+	}
 	source = source.toString().replace(/^(.*\/\/[^\/?#]*).*$/,"$1");
 	return source.split('http://')[1]
 }
@@ -219,6 +229,7 @@ export default function (navigateTo, dispatch) {
 																					
 																					
 																					if(typeof (Dbpedia_sameAs)=='undefined') {
+																						primary_data = removeUploadedSource(primary_data)
 																						dispatch({type: "RECEIVE_URL", 
 																									data: primary_data
 																							})
@@ -237,7 +248,7 @@ export default function (navigateTo, dispatch) {
 																									var objects = store.each(s,$rdf.sym(prop),undefined);
 																									primary_data = getData(Dbpedia_sameAs,prop,objects,prov,primary_data,propertiesLabels)	
 																								}
-																								
+																								primary_data = removeUploadedSource(primary_data)
 																								dispatch({type: "RECEIVE_URL", 
 																										data: primary_data
 																								})
@@ -298,6 +309,7 @@ export default function (navigateTo, dispatch) {
 				}
 				
 				dispatch({type: "INCLUDE_NEW_SOURCE", 
+						uploaded: uploadedSources,
 						data: newData
 						})
 					}
