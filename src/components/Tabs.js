@@ -8,9 +8,9 @@ const ProvTabs = ({ propValues , onValueClick, expandClick, extraLinkClick  }) =
         <Tabs>
             <TabList>
                 {Object.keys(propValues).map ( (tabName) => 
-                    tabName === 'Other sources' ?  null : <Tab key = {tabName}> {tabName} </Tab>
+                    tabName === 'Other sources' ?  null : <Tab key = {tabName}> <h5>{tabName}</h5> </Tab>
                 )}
-                <Tab key = {'Other sources'}>Other sources</Tab>
+                <Tab key = {'Other sources'}><h5>Other sources</h5></Tab>
             </TabList>
         
             {Object.keys(propValues).map ( (tabName, idx) => 
