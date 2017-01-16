@@ -2,7 +2,7 @@ import React, { PropTypes } from 'react'
 import PropValue from './PropValue'
 
 const PropValueIntermezzo = ({propertyList, isExpanded, onValueClick, expandClick, extraLinkClick}) => { 
-    console.log(propertyList[0])
+    // console.log(propertyList[0])
     if (!(propertyList)) {
         return null;
     }
@@ -13,6 +13,7 @@ const PropValueIntermezzo = ({propertyList, isExpanded, onValueClick, expandClic
                     {...propertyList[0]}
                     hasExpandButton={propertyList.length > 1}
                     button_type = {isExpanded ? "glyphicon glyphicon-minus":"glyphicon glyphicon-plus"}
+                    button_type = {propertyList[0].hasLink ? null:"glyphicon glyphicon-plus"}
                     hasLink_button = {propertyList[0].hasLink ? "glyphicon glyphicon-open":null}
                     onClick={() => onValueClick(propertyList[0].property,0,propertyList[0].provenance)}
                     onButtonClick={() => expandClick(propertyList[0].property,propertyList[0].provenance)}

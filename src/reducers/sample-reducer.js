@@ -37,15 +37,28 @@ export default function(state=initialState, action) {
 		case "INCLUDE_NEW_SOURCE":
 			var OldSameAs = Object.assign({}, state.data);
 			var NewSameAs = action.data['Other sources']['sameas'].list
-			for(var i=0;i<NewSameAs.length;i++){
-				OldSameAs['Other sources']['sameas'].list.push(NewSameAs[i])
+			for(var i = 0; i < NewSameAs.length; i++){
+				var flag = false
+
+				for(var ii = 0; ii < OldSameAs['Other sources']['sameas'].list.length; ii++){
+					if(OldSameAs['Other sources']['sameas'].list[ii].object == NewSameAs[i].object){
+						OldSameAs['Other sources']['sameas'].list[ii].provenance += ', ' + NewSameAs[i].provenance
+						flag = true
+						break
+					}
+				}
+				if(flag==false){
+					OldSameAs['Other sources']['sameas'].list.push(NewSameAs[i])
+				}
 			}
 			
 			var mergedData = Object.assign({}, state.data, action.data, OldSameAs)
+			
 			return {
 				...state,
 				data: mergedData
 			};
+
 		case "UPLOAD":
 			var triples2load = new Map;
 			newData = Object.assign({}, state.data);

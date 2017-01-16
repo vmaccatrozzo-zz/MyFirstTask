@@ -4,26 +4,37 @@ import { Tab, Tabs, TabList, TabPanel } from 'react-tabs';
 
 
 const ProvTabs = ({ propValues , onValueClick, expandClick, extraLinkClick  }) => {
-    
     return(
         <Tabs>
             <TabList>
-                {Object.keys(propValues).map ( (tabName, idx) => 
-                    <Tab key = {idx}> {tabName} </Tab>
+                {Object.keys(propValues).map ( (tabName) => 
+                    tabName === 'Other sources' ?  null : <Tab key = {tabName}> {tabName} </Tab>
                 )}
+                <Tab key = {'Other sources'}>Other sources</Tab>
             </TabList>
         
-            {Object.values(propValues).map ( (propValue, idx) => 
-                <TabPanel key = {idx}>
-                    <PropValueList 
-                        key = {idx}
-                        propValues = {propValue} 
-                        onValueClick = {onValueClick} 
-                        expandClick = {expandClick} 
-                        extraLinkClick = {extraLinkClick}
-                    />
-                </TabPanel>
-            )}    
+            {Object.keys(propValues).map ( (tabName, idx) => 
+                tabName === 'Other sources' ?  null :
+                    <TabPanel key = {idx}>
+                        <PropValueList 
+                            key = {idx}
+                            propValues = {propValues[tabName]} 
+                            onValueClick = {onValueClick} 
+                            expandClick = {expandClick} 
+                            extraLinkClick = {extraLinkClick}
+                        />
+                    </TabPanel>
+            )}
+            <TabPanel>
+                <PropValueList 
+                    key = {propValues.length}
+                    propValues = {propValues['Other sources']} 
+                    onValueClick = {onValueClick} 
+                    expandClick = {expandClick} 
+                    extraLinkClick = {extraLinkClick}
+                />
+            </TabPanel>
+               
       </Tabs>
     )
 }

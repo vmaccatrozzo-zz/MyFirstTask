@@ -1,28 +1,15 @@
-const properties2skip =['http://www.w3.org/2000/01/rdf-schema#comment','http://purl.org/dc/terms/identifier']
-const ontologies = ['http://downloads.dbpedia.org/2016-04/dbpedia_2016-04.owl','http://xmlns.com/foaf/spec/index.rdf','http://www.w3.org/2000/01/rdf-schema.rdf','http://www.w3.org/1999/02/22-rdf-syntax-ns.rdf','https://www.w3.org/2009/08/skos-reference/skos.rdf','https://www.w3.org/ns/prov-o.owl','http://www.w3.org/2002/07/owl.ttl','http://dublincore.org/2012/06/14/dcterms.ttl']
-const sameAsLabels = ['sameas','seealso']	
+const properties2skip =['http://www.w3.org/2000/01/rdf-schema#comment','http://purl.org/dc/terms/identifier','http://www.w3.org/2000/01/rdf-schema#seeAlso']
+const ontologies = ['http://downloads.dbpedia.org/2016-04/dbpedia_2016-04.owl','http://xmlns.com/foaf/spec/index.rdf','http://www.w3.org/2000/01/rdf-schema.rdf','http://www.w3.org/1999/02/22-rdf-syntax-ns.rdf','https://www.w3.org/2009/08/skos-reference/skos.rdf','https://www.w3.org/ns/prov-o.owl','http://www.w3.org/2002/07/owl.ttl','http://dublincore.org/2012/06/14/dcterms.ttl']	
 const $rdf = require('rdflib');
 const store = $rdf.graph()
 const timeout = 5000 // 5000 ms timeout
 const fetcher = new $rdf.Fetcher(store, timeout)
 
-function sort_data(primary_data){
-	var keys = new Array()
-	var new_primary_data = new Map()
-	for(var k=0; k<Object.keys(primary_data).length; k++){
-		if(Object.keys(primary_data)[k]!='Other sources')
-			keys.push(Object.keys(primary_data)[k])
-	}
-	keys.push('Other sources')
-	for(k=0; k<keys.length; k++){
-		new_primary_data[keys[k]] = primary_data[keys[k]]
-	}
- return new_primary_data
-}
+
 function pushTriple(triples_array, object, provenance, property_uri, subject_uri, propertiesLabels){
 			
 	var propertyLabel = getPropertyLabel(property_uri,propertiesLabels)
-	if(propertyLabel == 'sameas'){
+	if(propertyLabel=='sameas'){
 		var hasLink = true
 		var row = {property: propertyLabel, object: object, provenance: provenance, selected: false, property_uri:property_uri, object_uri: object, subject_uri: subject_uri, hasLink: hasLink}
 		if(Object.keys(triples_array).indexOf('Other sources') == -1){
@@ -31,11 +18,18 @@ function pushTriple(triples_array, object, provenance, property_uri, subject_uri
 		if(Object.keys(triples_array['Other sources']).indexOf('sameas')==-1){
 			triples_array['Other sources'][propertyLabel]= {list: new Array(), isExpanded: true}
 		}
-		
-		triples_array['Other sources'][propertyLabel].list.push(row)
+		var flag = false
+		for(var i = 0; i < triples_array['Other sources'][propertyLabel].list.length; i++){
+			if(triples_array['Other sources'][propertyLabel].list[i].object == row.object){
+				triples_array['Other sources'][propertyLabel].list[i].provenance += ', ' + row.provenance
+				flag = true
+				break
+			}
+		}
+		if (flag == false){
+			triples_array['Other sources'][propertyLabel].list.push(row)
+		}
 	}else{
-		
-	
 		if(Object.keys(triples_array).indexOf(provenance)==-1){
 			triples_array[provenance] = new Map()
 		}
@@ -49,8 +43,20 @@ function pushTriple(triples_array, object, provenance, property_uri, subject_uri
 	return triples_array
 }
 
+function groupOtherSourcesDuplicates(dataArray){
+	
+	var keys = Object.keys(dataArray['Other sources'])
+	for(var k = 0; k<keys.length; k++){
+		var propertyLabel = dataArray['Other sources'][k]
+		for(var p = 0; p<propertyLabel.length; p++)	{
+
+		}
+	}
+
+}
 function extractSource(source){
-	return source.toString().replace(/^(.*\/\/[^\/?#]*).*$/,"$1");
+	source = source.toString().replace(/^(.*\/\/[^\/?#]*).*$/,"$1");
+	return source.split('http://')[1]
 }
 function getPropertyLabel(property,propertiesLabels){
 	if((typeof (propertiesLabels)) =='undefined'){
@@ -213,7 +219,6 @@ export default function (navigateTo, dispatch) {
 																					
 																					
 																					if(typeof (Dbpedia_sameAs)=='undefined') {
-																						primary_data = sort_data(primary_data)
 																						dispatch({type: "RECEIVE_URL", 
 																									data: primary_data
 																							})
@@ -233,7 +238,6 @@ export default function (navigateTo, dispatch) {
 																									primary_data = getData(Dbpedia_sameAs,prop,objects,prov,primary_data,propertiesLabels)	
 																								}
 																								
-																								primary_data = sort_data(primary_data)
 																								dispatch({type: "RECEIVE_URL", 
 																										data: primary_data
 																								})
@@ -290,8 +294,6 @@ export default function (navigateTo, dispatch) {
 					for(var i=0; i<unique_prop.length; i++){    
 						var prop = unique_prop[i];
 						var objects = store.each(s,$rdf.sym(prop),undefined);
-						console.log(s.value)
-						
 						newData = getData(new_uri,prop,objects,prov,newData,[])	
 				}
 				
@@ -310,47 +312,7 @@ export default function (navigateTo, dispatch) {
 
 		uploadData: function(){
 			dispatch({type: "UPLOAD"})
-		}
-	
-
-			
-			// var jsonLDMAP = '['
-			// var subjects = Object.keys(triples2load)
-			// for (var keySub in triples2load){
-			// 	jsonLDMAP += '{"@id":"' +  keySub +'"'
-			// 	 if(subjects.length >1){
-			// 		jsonLDMAP += ',"http://www.w3.org/2002/07/owl#sameAs":['
-			// 		var index = subjects.indexOf(keySub)
-			// 		subjects.splice(index, 1)
-			// 		for (var s = 0 ; s < subjects.length; s++){
-			// 			if (keySub!=subjects[s]){
-			// 				jsonLDMAP += '"' +subjects[s] +'"'
-			// 				if (s<subjects.length-1){
-			// 					jsonLDMAP += ','
-			// 				}
-			// 			}
-			// 		}
-			// 		jsonLDMAP += ']'
-			// 	}
-				
-			// 	for (var keyProp in triples2load[keySub]){
-			// 		// console.log(keyProp)
-			// 		jsonLDMAP += ',"'+ keyProp +'":['
-			// 		for (var o =0; o  < triples2load[keySub][keyProp].length ; o++){
-			// 			// console.log(triples2load[keySub][keyProp][o])
-			// 			jsonLDMAP += '"'+triples2load[keySub][keyProp][o] +'"'
-			// 			if (o != triples2load[keySub][keyProp].length-1){
-			// 				jsonLDMAP +=","
-			// 			}else{
-			// 				jsonLDMAP +="]"
-			// 			}
-			// 		}
-			// 	}
-			// 	jsonLDMAP +="},"
-			// }
-			// jsonLDMAP = jsonLDMAP.substring(0, jsonLDMAP.length - 1) + "]"
-			// console.log(jsonLDMAP)
-		
+		}	
   	}
 };
 

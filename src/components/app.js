@@ -21,15 +21,12 @@ class App extends React.Component {
 					)
 		}else if (typeof this.props.data == 'object'){
 				return (
-				
 					<form id = 'result'  >
 						<div className="form-group text-right">
-							<button type='submit'onClick={this.props.uploadData}  className='btn btn-default'> Continue </button>	
+							<button type='submit' onClick={this.props.uploadData}  className='btn btn-default'> Continue </button>	
 						</div>
 						<ProvTabs propValues={this.props.data} onValueClick={this.props.onValueClick} expandClick={this.props.expandClick} extraLinkClick={this.props.onLinkClick}/>
-						
 					</form>
-				
 			);
 		}else{
 			return (
