@@ -18,7 +18,8 @@ class App extends React.Component {
 						</form>
 					</div>
 					)
-		}else if(typeof this.props.uploadDatajs == 'object'){
+		}else if(typeof this.props.uploadDatajs == 'object' && this.props.uploadDatajs.length>0){
+			console.log( this.props.uploadDatajs)
 			return(
 				<div className="container basic-margin">
 					<h2 className="small-margin">Upload and connect your new dataset</h2>

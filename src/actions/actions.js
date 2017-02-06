@@ -7,11 +7,13 @@ const store = $rdf.graph()
 const timeout = 5000 // 5000 ms timeout
 const fetcher = new $rdf.Fetcher(store, timeout)
 const uploadedSources = new Array 
-
+const Labels = new Map();
 
 function fix_url(url){
 
 	var url_fixed = url;
+	var entityURL = url;
+
 	if (url.indexOf('http://viaf')==0){
 		url_fixed = url+'/rdf.xml'
 		var entityURL = url
@@ -22,7 +24,7 @@ function fix_url(url){
 	}
 
 	// https://www.wikidata.org/wiki/Q1067
-	if(url.indexOf('https://www.wikidata.org')== 0){
+	if(url.indexOf('https://www.wikidata.org')== 0 || url.indexOf('http://www.wikidata.org')== 0){
 		var splittedURL = url.split('/')
 		var entityID= splittedURL[splittedURL.length-1]
 		var url_fixed = 'https://www.wikidata.org/wiki/Special:EntityData/' +entityID +'.rdf'
@@ -31,11 +33,11 @@ function fix_url(url){
 	return([url_fixed,entityURL])
 }
 
-function pushTriple(triples_array, object_uri, provenance, property_uri, subject_uri, Labels){
+function pushTriple(triples_array, object_uri, provenance, property_uri, subject_uri){
 	
-	var propertyLabel = getPropertyLabel(property_uri,Labels)
-	var objectLabel = getObjectLabel(object_uri,Labels)
-
+	var propertyLabel = getPropertyLabel(property_uri)
+	var objectLabel = getObjectLabel(object_uri)
+	
 	if(propertyLabel == 'sameAs'){
 		if(uploadedSources.indexOf(object_uri)==-1){
 			var row = {property: propertyLabel, object: objectLabel, provenance: provenance, selected: false, property_uri:property_uri, object_uri: object_uri, subject_uri: subject_uri, hasLink: true}
@@ -83,7 +85,6 @@ function removeUploadedSource(dataArray){
 			}
 		}
 	}
-	
 	return(dataArray)
 }
 
@@ -97,7 +98,8 @@ function extractSource(source){
 	source = source.toString().replace(/^(.*\/\/[^\/?#]*).*$/,"$1")
 	return source.split('http://')[1]
 }
-function getObjectLabel(url,Labels){
+
+function getObjectLabel(url){
 	var label = url
 	url = url.replace('prop/direct','entity')
 	url = url.replace('prop','entity')
@@ -107,8 +109,9 @@ function getObjectLabel(url,Labels){
 		}
 	}
 	return label
-};
-function getPropertyLabel(url, Labels){
+}
+
+function getPropertyLabel(url){
 	url = url.replace('prop/direct','entity')
 	url = url.replace('prop','entity')
 	if((typeof (Labels)) =='undefined'){
@@ -126,7 +129,6 @@ function getPropertyLabel(url, Labels){
 			var label = parts[parts.length-1]
 		}else{
 			var label = Labels[url]	
-			// console.log(label)
 		}
 	}
 	return label
@@ -161,13 +163,13 @@ function uniqueArrayObjects(array2sort){
 	return result
 };
 
-function getData(subject, property, objects, prov, primary_data, propertyLabels,sameAsList){	
+function getData(subject, property, objects, prov, primary_data){	
 	
 	if (properties2skip.indexOf(property) ==-1 & property.indexOf('http://www.iana.org')!=0){
 		var unique_objects = uniqueArrayObjects(objects)
 		for(var i=0; i<unique_objects.length; i++){
 			var object = unique_objects[i]
-			primary_data = pushTriple(primary_data, object, prov, property, subject,propertyLabels)
+			primary_data = pushTriple(primary_data, object, prov, property, subject)
 			
 		}
 		
@@ -176,11 +178,6 @@ function getData(subject, property, objects, prov, primary_data, propertyLabels,
 	return(primary_data)
 };
 
-export function onSampleClick() {
-	return function(dispatch){
-		dispatch(SampleClick())
-	}		
-}
 export default function (navigateTo, dispatch) {
 	return {
 		onSampleClick: function() {
@@ -189,7 +186,7 @@ export default function (navigateTo, dispatch) {
 			var entityURL = url[1]
 			var url_complete = url[0]
 			var primary_data = new Array();
-			var Labels = new Map();
+			
 			
 			
 			// fetcher.nowOrWhenFetched(ontologies[0], function(ok, body, xhr) {
@@ -285,7 +282,7 @@ export default function (navigateTo, dispatch) {
 																						var prop = unique_prop[i];
 																						var objects = store.each(s,$rdf.sym(prop),undefined);
 																						
-																						primary_data = getData(url,prop,objects,prov,primary_data,Labels)
+																						primary_data = getData(url,prop,objects,prov,primary_data)
 																						
 																					}
 																					
@@ -309,7 +306,7 @@ export default function (navigateTo, dispatch) {
 																								for(var i=0; i<unique_prop.length; i++){     
 																									var prop = unique_prop[i];
 																									var objects = store.each(s,$rdf.sym(prop),undefined);
-																									primary_data = getData(Dbpedia_sameAs,prop,objects,prov,primary_data,Labels)	
+																									primary_data = getData(Dbpedia_sameAs,prop,objects,prov,primary_data)	
 																								}
 																								console.log(primary_data['Other sources']['sameAs'])
 																								primary_data = removeUploadedSource(primary_data)
@@ -350,25 +347,41 @@ export default function (navigateTo, dispatch) {
 		},
 		onLinkClick: function (objectUri) {
 			
+			console.log(objectUri)
 			const store = $rdf.graph()
 			const fetcher = new $rdf.Fetcher(store, timeout)
 			var newData = new Array()
-			var new_url = fix_url(objectUri)
-			
-			
-			
+			var url = fix_url(objectUri)
+			var new_url = url[0]
+			var entityURL = url[1]
+			console.log(entityURL)
 			fetcher.nowOrWhenFetched(new_url, function(ok, body, xhr) {
 				if (!ok) {
 					console.log("Oops, something happened and couldn't fetch data");
 				} else {
-					var s = $rdf.sym(new_url)
+					
+					var labels_data = store.statementsMatching(undefined,$rdf.sym('http://www.w3.org/2000/01/rdf-schema#label'),undefined)																														
+					for (var i = 0; i < labels_data.length; i++) {
+						if (labels_data[i].object.lang) {
+							if (labels_data[i].object.lang == 'en') {
+								var sub = labels_data[i].subject.value
+								var obj = labels_data[i].object.value
+								Labels[sub] = obj
+							}
+						} else {
+							var sub = labels_data[i].subject.value
+							var obj = labels_data[i].object.value
+							Labels[sub] = obj
+						}
+					}	
+					var s = $rdf.sym(entityURL)
 					var props = store.each(s, undefined)
 					var unique_prop = uniqueArray(props)
-					var prov = extractSource(new_url)
+					var prov = extractSource(entityURL)
 					for(var i=0; i<unique_prop.length; i++){    
 						var prop = unique_prop[i];
 						var objects = store.each(s,$rdf.sym(prop),undefined);
-						newData = getData(new_url,prop,objects,prov,newData,[])	
+						newData = getData(new_url,prop,objects,prov,newData)	
 				}
 				
 				dispatch({type: "INCLUDE_NEW_SOURCE", 
