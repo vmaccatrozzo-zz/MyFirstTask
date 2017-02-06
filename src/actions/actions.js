@@ -1,34 +1,61 @@
+import SampleClick from './actions/SampleClick'
+
 const properties2skip =['http://www.w3.org/2000/01/rdf-schema#comment','http://purl.org/dc/terms/identifier','http://www.w3.org/2000/01/rdf-schema#seeAlso']
 const ontologies = ['http://downloads.dbpedia.org/2016-04/dbpedia_2016-04.owl','http://xmlns.com/foaf/spec/index.rdf','http://www.w3.org/2000/01/rdf-schema.rdf','http://www.w3.org/1999/02/22-rdf-syntax-ns.rdf','https://www.w3.org/2009/08/skos-reference/skos.rdf','https://www.w3.org/ns/prov-o.owl','http://www.w3.org/2002/07/owl.ttl','http://dublincore.org/2012/06/14/dcterms.ttl']	
 const $rdf = require('rdflib');
 const store = $rdf.graph()
 const timeout = 5000 // 5000 ms timeout
 const fetcher = new $rdf.Fetcher(store, timeout)
-const uploadedSources = new Array
+const uploadedSources = new Array 
 
 
-function pushTriple(triples_array, object, provenance, property_uri, subject_uri, propertiesLabels){
-			
-	var propertyLabel = getPropertyLabel(property_uri,propertiesLabels)
-	if(propertyLabel=='sameas' & uploadedSources.indexOf(object)==-1){
-		var hasLink = true
-		var row = {property: propertyLabel, object: object, provenance: provenance, selected: false, property_uri:property_uri, object_uri: object, subject_uri: subject_uri, hasLink: hasLink}
-		if(Object.keys(triples_array).indexOf('Other sources') == -1){
-			triples_array['Other sources'] = new Map()
-		}
-		if(Object.keys(triples_array['Other sources']).indexOf('sameas')==-1){
-			triples_array['Other sources'][propertyLabel]= {list: new Array(), isExpanded: true}
-		}
-		var flag = false
-		for(var i = 0; i < triples_array['Other sources'][propertyLabel].list.length; i++){
-			if(triples_array['Other sources'][propertyLabel].list[i].object == row.object){
-				triples_array['Other sources'][propertyLabel].list[i].provenance += ', ' + row.provenance
-				flag = true
-				break
+function fix_url(url){
+
+	var url_fixed = url;
+	if (url.indexOf('http://viaf')==0){
+		url_fixed = url+'/rdf.xml'
+		var entityURL = url
+	}
+	if(url.indexOf('http://dbpedia.org/page')==0){
+		url_fixed = url_fixed.replace('page','resource')
+		var entityURL = url_fixed
+	}
+
+	// https://www.wikidata.org/wiki/Q1067
+	if(url.indexOf('https://www.wikidata.org')== 0){
+		var splittedURL = url.split('/')
+		var entityID= splittedURL[splittedURL.length-1]
+		var url_fixed = 'https://www.wikidata.org/wiki/Special:EntityData/' +entityID +'.rdf'
+		var entityURL = 'http://www.wikidata.org/entity/' + entityID
+	}
+	return([url_fixed,entityURL])
+}
+
+function pushTriple(triples_array, object_uri, provenance, property_uri, subject_uri, Labels){
+	
+	var propertyLabel = getPropertyLabel(property_uri,Labels)
+	var objectLabel = getObjectLabel(object_uri,Labels)
+
+	if(propertyLabel == 'sameAs'){
+		if(uploadedSources.indexOf(object_uri)==-1){
+			var row = {property: propertyLabel, object: objectLabel, provenance: provenance, selected: false, property_uri:property_uri, object_uri: object_uri, subject_uri: subject_uri, hasLink: true}
+			if(Object.keys(triples_array).indexOf('Other sources') == -1){
+				triples_array['Other sources'] = new Map()
 			}
-		}
-		if (flag == false){
-			triples_array['Other sources'][propertyLabel].list.push(row)
+			if(Object.keys(triples_array['Other sources']).indexOf('sameAs')==-1){
+				triples_array['Other sources'][propertyLabel]= {list: new Array(), isExpanded: true}
+			}
+			var flag = false
+			for(var i = 0; i < triples_array['Other sources'][propertyLabel].list.length; i++){
+				if(triples_array['Other sources'][propertyLabel].list[i].object == row.object){
+					triples_array['Other sources'][propertyLabel].list[i].provenance += ', ' + row.provenance
+					flag = true
+					break
+				}
+			}
+			if (flag == false){
+				triples_array['Other sources'][propertyLabel].list.push(row)
+			}
 		}
 	}else{
 		if(Object.keys(triples_array).indexOf(provenance)==-1){
@@ -38,20 +65,22 @@ function pushTriple(triples_array, object, provenance, property_uri, subject_uri
 			triples_array[provenance][propertyLabel] = new Map
 			triples_array[provenance][propertyLabel]= {list: new Array(), isExpanded: false}
 		}
-		var row = {property: propertyLabel, object: object, provenance: provenance, selected: false, property_uri:property_uri, object_uri: object, subject_uri: subject_uri, hasLink: false}
+		var row = {property: propertyLabel, object: objectLabel, provenance: provenance, selected: false, property_uri:property_uri, object_uri: object_uri, subject_uri: subject_uri, hasLink: false}
 		triples_array[provenance][propertyLabel].list.push(row) 
 	}
 	return triples_array
 }
 
 function removeUploadedSource(dataArray){
-	var keys = Object.keys(dataArray['Other sources']['sameas'])
-	for(var k = 0; k<keys.length; k++){
-		var dataList = dataArray['Other sources']['sameas'][keys[k]]
-		for(var d = 0; d < dataList.length; d++){
-			if(uploadedSources.indexOf(dataArray['Other sources']['sameas'][keys[k]][d].object)!=-1){
-				dataArray['Other sources']['sameas'][keys[k]].splice(d, 1)
-			}		
+	if(typeof(dataArray['Other sources']) != 'undefined'){
+	var keys = Object.keys(dataArray['Other sources']['sameAs'])
+		for(var k = 0; k<keys.length; k++){
+			var dataList = dataArray['Other sources']['sameAs'][keys[k]]
+			for(var d = 0; d < dataList.length; d++){
+				if(uploadedSources.indexOf(dataArray['Other sources']['sameAs'][keys[k]][d].object)!=-1){
+					dataArray['Other sources']['sameAs'][keys[k]].splice(d, 1)
+				}		
+			}
 		}
 	}
 	
@@ -65,29 +94,42 @@ function extractSource(source){
 	if(uploadedSources.indexOf(source)==-1){
 		uploadedSources.push(source)
 	}
-	source = source.toString().replace(/^(.*\/\/[^\/?#]*).*$/,"$1");
+	source = source.toString().replace(/^(.*\/\/[^\/?#]*).*$/,"$1")
 	return source.split('http://')[1]
 }
-function getPropertyLabel(property,propertiesLabels){
-	if((typeof (propertiesLabels)) =='undefined'){
-		var parts = property.split('/');
+function getObjectLabel(url,Labels){
+	var label = url
+	url = url.replace('prop/direct','entity')
+	url = url.replace('prop','entity')
+	if((typeof (Labels)) !='undefined'){
+		if(typeof (Labels[url]) !='undefined'){
+			label = Labels[url]	
+		}
+	}
+	return label
+};
+function getPropertyLabel(url, Labels){
+	url = url.replace('prop/direct','entity')
+	url = url.replace('prop','entity')
+	if((typeof (Labels)) =='undefined'){
+		var parts = url.split('/');
 			if (parts[parts.length-1].indexOf('#') != -1){
 				parts = parts[parts.length-1].split('#')
 			}
 		var label = parts[parts.length-1]
 	}else{	
-		if(typeof (propertiesLabels[property]) =='undefined'){
-			var parts = property.split('/');
+		if(typeof (Labels[url]) =='undefined'){
+			var parts = url.split('/');
 			if (parts[parts.length-1].indexOf('#') != -1){
 				parts = parts[parts.length-1].split('#')
 			}
 			var label = parts[parts.length-1]
 		}else{
-			var label = propertiesLabels[property]	
+			var label = Labels[url]	
 			// console.log(label)
 		}
 	}
-	return label.toLowerCase()
+	return label
 };
 
 function uniqueArray(inputArray){
@@ -133,25 +175,23 @@ function getData(subject, property, objects, prov, primary_data, propertyLabels,
 	
 	return(primary_data)
 };
-// function cb(ok, body, xhr) { // dostuff(onto[idx] )}
+
+export function onSampleClick() {
+	return function(dispatch){
+		dispatch(SampleClick())
+	}		
+}
 export default function (navigateTo, dispatch) {
-
-
-
 	return {
 		onSampleClick: function() {
 			var url = document.getElementById('input_url').value;
-			var url_complete = '';
-			if (url.indexOf('http://viaf')==0){
-				url_complete = url+'/rdf.xml';
-			}else{
-				url_complete = url;
-			};
+			url = fix_url(url)
+			var entityURL = url[1]
+			var url_complete = url[0]
 			var primary_data = new Array();
-			var propertiesLabels = new Map();
+			var Labels = new Map();
 			
-			// test_fetcher()
-			// js promises
+			
 			// fetcher.nowOrWhenFetched(ontologies[0], function(ok, body, xhr) {
 			// 	if (!ok) {
 			// 		console.log("Oops, something happened and couldn't fetch data");
@@ -185,6 +225,7 @@ export default function (navigateTo, dispatch) {
 			// 																console.log("Oops, something happened and couldn't fetch data");
 			// 															} else {
 																			fetcher.nowOrWhenFetched(url_complete, function(ok, body, xhr) {
+																				console.log(url_complete)
 																				if (!ok) {
 																					console.log("Oops, something happened and couldn't fetch data");
 																					dispatch({type: "NO_DATA", 
@@ -192,42 +233,64 @@ export default function (navigateTo, dispatch) {
 																							})
 																				} else {
 																					
-																					var labels_data = store.statementsMatching(undefined,$rdf.sym('http://www.w3.org/2000/01/rdf-schema#label'),undefined)																
+																					var labels_data = store.statementsMatching(undefined,$rdf.sym('http://www.w3.org/2000/01/rdf-schema#label'),undefined)	
+																																				
 																					for(var i = 0; i<labels_data.length; i++){
 																						if(labels_data[i].object.lang){
 																							if(labels_data[i].object.lang == 'en'){
 																								var sub = labels_data[i].subject.value
 																								var obj = labels_data[i].object.value
-																								propertiesLabels[sub] = obj
+																								Labels[sub] = obj
 																							}
 																						}else{
 																							var sub = labels_data[i].subject.value
 																							var obj = labels_data[i].object.value
-																							propertiesLabels[sub] = obj
+																							Labels[sub] = obj
 																						}
 																					}	
-																					var s = $rdf.sym(url),
-																					prop = store.each(s, undefined);																			
+																					
+																					
+																					// generalize this part to fit other sources																					
+																					// var subs = (store.each(undefined))
+																					// console.log(subs)																					
+																					var s = $rdf.sym(entityURL),
+																					prop = store.each(s, undefined);		
+																																						
 																					var sameAs_prop = $rdf.sym("http://schema.org/sameAs");
 																					var sameASes = store.each(s,sameAs_prop,undefined);
 																					for (var i=0; i<sameASes.length; i++){
 																						var temp = sameASes[i].value;
 																						if (temp.indexOf('http://dbpedia.org/resource/')==0){
 																							var Dbpedia_sameAs = temp;
+																							break
 																						}
 																					}
-																					var prov = extractSource(url_complete)
+																					if(sameASes.length == 0){
+																						var sameAs_prop = $rdf.sym("http://www.w3.org/2002/07/owl#sameAs");
+																						var sameASes = store.each(s,sameAs_prop,undefined);
+																						for (var i=0; i<sameASes.length; i++){
+																							var temp = sameASes[i].value;
+																							if (temp.indexOf('http://dbpedia.org/resource/')==0){
+																								var Dbpedia_sameAs = temp;
+																								break
+																							}
+																						}
+																					}
+																					// until here
+																					var prov = extractSource(entityURL)
 																					
 																					var unique_prop = uniqueArray(prop)
 																					
 																					for(var i=0; i<unique_prop.length; i++){       	
 																						var prop = unique_prop[i];
 																						var objects = store.each(s,$rdf.sym(prop),undefined);
-																						primary_data = getData(url,prop,objects,prov,primary_data,propertiesLabels)
+																						
+																						primary_data = getData(url,prop,objects,prov,primary_data,Labels)
 																						
 																					}
 																					
 																					
+
 																					if(typeof (Dbpedia_sameAs)=='undefined') {
 																						primary_data = removeUploadedSource(primary_data)
 																						dispatch({type: "RECEIVE_URL", 
@@ -246,8 +309,9 @@ export default function (navigateTo, dispatch) {
 																								for(var i=0; i<unique_prop.length; i++){     
 																									var prop = unique_prop[i];
 																									var objects = store.each(s,$rdf.sym(prop),undefined);
-																									primary_data = getData(Dbpedia_sameAs,prop,objects,prov,primary_data,propertiesLabels)	
+																									primary_data = getData(Dbpedia_sameAs,prop,objects,prov,primary_data,Labels)	
 																								}
+																								console.log(primary_data['Other sources']['sameAs'])
 																								primary_data = removeUploadedSource(primary_data)
 																								dispatch({type: "RECEIVE_URL", 
 																										data: primary_data
@@ -274,6 +338,9 @@ export default function (navigateTo, dispatch) {
 			// 	}
 			// })
 		},
+
+		
+
 		
 		onValueClick: function (property,id,provenance) {
 		  	dispatch({type: "SELECT_VALUE", 
@@ -286,26 +353,22 @@ export default function (navigateTo, dispatch) {
 			const store = $rdf.graph()
 			const fetcher = new $rdf.Fetcher(store, timeout)
 			var newData = new Array()
-		
-			if(objectUri.indexOf('http://www.wikidata.org')== 0){
-				var new_uri = objectUri.replace('entity','Special:EntityData')
-			}else{
-				var new_uri = objectUri
-			}
+			var new_url = fix_url(objectUri)
 			
 			
-			fetcher.nowOrWhenFetched(new_uri, function(ok, body, xhr) {
+			
+			fetcher.nowOrWhenFetched(new_url, function(ok, body, xhr) {
 				if (!ok) {
 					console.log("Oops, something happened and couldn't fetch data");
 				} else {
-					var s = $rdf.sym(new_uri)
+					var s = $rdf.sym(new_url)
 					var props = store.each(s, undefined)
 					var unique_prop = uniqueArray(props)
-					var prov = extractSource(new_uri)
+					var prov = extractSource(new_url)
 					for(var i=0; i<unique_prop.length; i++){    
 						var prop = unique_prop[i];
 						var objects = store.each(s,$rdf.sym(prop),undefined);
-						newData = getData(new_uri,prop,objects,prov,newData,[])	
+						newData = getData(new_url,prop,objects,prov,newData,[])	
 				}
 				
 				dispatch({type: "INCLUDE_NEW_SOURCE", 
@@ -323,7 +386,43 @@ export default function (navigateTo, dispatch) {
 		},
 
 		uploadData: function(){
-			dispatch({type: "UPLOAD"})
+			var collectionInfoURL = `${process.env.server}/v2.1/metadata/Admin?withCollectionInfo=true`
+			fetch(collectionInfoURL, {
+			method: 'get',
+			headers: {
+				'Accept': 'application/json',
+				'Content-Type': 'application/json',
+			},
+			})
+			.then(response => {
+			if (response.status >= 200 && response.status < 300) {
+				console.log(response);
+				dispatch(loginSuccess(response));
+			} else {
+				const error = new Error(response.statusText);
+				error.response = response;
+				dispatch(loginError(error));
+				throw error;
+			}
+			})
+			.catch(error => { console.log('request failed', error); });
+			
+			// var response = JSON.parse('{"relations":{"collectionName":"relations","collectionLabel":"relations","description":null,"unknown":false,"relationCollection":true,"archetypeName":"relation","properties":[]},"concepts":{"collectionName":"concepts","collectionLabel":"concepts","description":"Concepts which do not conform to a specific archetype.","unknown":false,"relationCollection":false,"archetypeName":"concept","properties":[{"name":"hasFirstPerson","type":"relation","quicksearch":"/v2.1/domain/persons/autocomplete","relation":{"direction":"OUT","outName":"hasFirstPerson","inName":"isFirstPersonInRelation","targetCollection":"persons","relationCollection":"relations","relationTypeId":"fcaed6c6-afdc-4345-a795-596c9f10a33b"}},{"name":"hasSecondPerson","type":"relation","quicksearch":"/v2.1/domain/persons/autocomplete","relation":{"direction":"OUT","outName":"hasSecondPerson","inName":"isSecondPersonInRelation","targetCollection":"persons","relationCollection":"relations","relationTypeId":"db9fb895-bfb1-4d78-8eeb-c56e3825e87a"}},{"name":"hasPersonToPersonRelationType","type":"relation","quicksearch":"/v2.1/domain/concepts/autocomplete","relation":{"direction":"OUT","outName":"hasPersonToPersonRelationType","inName":"isPersonToPersonRelationTypeOf","targetCollection":"concepts","relationCollection":"relations","relationTypeId":"2dddb267-7da1-412c-ae20-4f35fa2299fb"}},{"name":"hasStateType","type":"relation","quicksearch":"/v2.1/domain/concepts/autocomplete","relation":{"direction":"OUT","outName":"hasStateType","inName":"isStateTypeOf","targetCollection":"concepts","relationCollection":"relations","relationTypeId":"196aeaab-c1f5-452f-a73c-d2c02274d1ea"}},{"name":"isStateOfPerson","type":"relation","quicksearch":"/v2.1/domain/persons/autocomplete","relation":{"direction":"OUT","outName":"isStateOfPerson","inName":"hasPersonState","targetCollection":"persons","relationCollection":"relations","relationTypeId":"13f1ed51-c66a-4250-9016-591f247a3f98"}},{"name":"isStateLinkedToInstitute","type":"relation","quicksearch":"/v2.1/domain/collectives/autocomplete","relation":{"direction":"OUT","outName":"isStateLinkedToInstitute","inName":"isInstituteLinkedToState","targetCollection":"collectives","relationCollection":"relations","relationTypeId":"20d51c91-fd15-4f8f-bace-da73a8238d45"}},{"name":"isStateLinkedToLocation","type":"relation","quicksearch":"/v2.1/domain/locations/autocomplete","relation":{"direction":"OUT","outName":"isStateLinkedToLocation","inName":"isLocationLinkedToState","targetCollection":"locations","relationCollection":"relations","relationTypeId":"0e58684f-3bf9-45b2-b534-c5302d9ed8f2"}},{"name":"hasDataLineType","type":"relation","quicksearch":"/v2.1/domain/concepts/autocomplete","relation":{"direction":"OUT","outName":"hasDataLineType","inName":"isDataLineTypeOf","targetCollection":"concepts","relationCollection":"relations","relationTypeId":"fd1d272e-376f-4ed3-b592-3708e43703bd"}},{"name":"isDataLineForPerson","type":"relation","quicksearch":"/v2.1/domain/persons/autocomplete","relation":{"direction":"OUT","outName":"isDataLineForPerson","inName":"hasDataLine","targetCollection":"persons","relationCollection":"relations","relationTypeId":"e7096a9f-b7be-447c-b101-da7e86b0440b"}},{"name":"hasFieldOfInterest","type":"relation","quicksearch":"/v2.1/domain/concepts/autocomplete","relation":{"direction":"OUT","outName":"hasFieldOfInterest","inName":"isFieldOfInterestOf","targetCollection":"concepts","relationCollection":"relations","relationTypeId":"1e8c984d-44e2-4253-b462-1819c51d9c0d"}},{"name":"isScientistBioOf","type":"relation","quicksearch":"/v2.1/domain/persons/autocomplete","relation":{"direction":"OUT","outName":"isScientistBioOf","inName":"hasScientistBio","targetCollection":"persons","relationCollection":"relations","relationTypeId":"4f840df2-00c5-4643-849d-ac00dc791dfc"}},{"name":"isPersonToPersonRelationTypeOf","type":"relation","quicksearch":"/v2.1/domain/concepts/autocomplete","relation":{"direction":"IN","outName":"hasPersonToPersonRelationType","inName":"isPersonToPersonRelationTypeOf","targetCollection":"concepts","relationCollection":"relations","relationTypeId":"2dddb267-7da1-412c-ae20-4f35fa2299fb"}},{"name":"isStateTypeOf","type":"relation","quicksearch":"/v2.1/domain/concepts/autocomplete","relation":{"direction":"IN","outName":"hasStateType","inName":"isStateTypeOf","targetCollection":"concepts","relationCollection":"relations","relationTypeId":"196aeaab-c1f5-452f-a73c-d2c02274d1ea"}},{"name":"isDataLineTypeOf","type":"relation","quicksearch":"/v2.1/domain/concepts/autocomplete","relation":{"direction":"IN","outName":"hasDataLineType","inName":"isDataLineTypeOf","targetCollection":"concepts","relationCollection":"relations","relationTypeId":"fd1d272e-376f-4ed3-b592-3708e43703bd"}},{"name":"isFieldOfInterestOf","type":"relation","quicksearch":"/v2.1/domain/concepts/autocomplete","relation":{"direction":"IN","outName":"hasFieldOfInterest","inName":"isFieldOfInterestOf","targetCollection":"concepts","relationCollection":"relations","relationTypeId":"1e8c984d-44e2-4253-b462-1819c51d9c0d"}}]},"documents":{"collectionName":"documents","collectionLabel":"documents","description":"Stories, novels, letters, diaries, plays, films, etc.","unknown":false,"relationCollection":false,"archetypeName":"document","properties":[{"name":"title","type":"text"},{"name":"documentType","type":"text"},{"name":"date","type":"datable"},{"name":"isCreatedBy","type":"relation","quicksearch":"/v2.1/domain/persons/autocomplete","relation":{"direction":"OUT","outName":"isCreatedBy","inName":"isCreatorOf","targetCollection":"persons","relationCollection":"relations","relationTypeId":"b2bb977b-63e6-46f9-99d7-9de55f82e0b1"}}]},"collectives":{"collectionName":"collectives","collectionLabel":"collectives","description":"Institutes, multiple persons, companies, etc.","unknown":false,"relationCollection":false,"archetypeName":"collective","properties":[{"name":"name","type":"text"},{"name":"hasMember","type":"relation","quicksearch":"/v2.1/domain/persons/autocomplete","relation":{"direction":"OUT","outName":"hasMember","inName":"isMemberOf","targetCollection":"persons","relationCollection":"relations","relationTypeId":"595e6e24-a171-493b-9a4e-88da1e110c40"}},{"name":"locatedAt","type":"relation","quicksearch":"/v2.1/domain/locations/autocomplete","relation":{"direction":"OUT","outName":"locatedAt","inName":"isHomeOf","targetCollection":"locations","relationCollection":"relations","relationTypeId":"cbbd772e-1409-4b25-9625-8793120ff9c5"}},{"name":"isInstituteLinkedToState","type":"relation","quicksearch":"/v2.1/domain/concepts/autocomplete","relation":{"direction":"IN","outName":"isStateLinkedToInstitute","inName":"isInstituteLinkedToState","targetCollection":"concepts","relationCollection":"relations","relationTypeId":"20d51c91-fd15-4f8f-bace-da73a8238d45"}}]},"locations":{"collectionName":"locations","collectionLabel":"locations","description":"Countries, cities, villages, streets, etc.","unknown":false,"relationCollection":false,"archetypeName":"location","properties":[{"name":"name","type":"text"},{"name":"country","type":"text"},{"name":"isBirthPlaceOf","type":"relation","quicksearch":"/v2.1/domain/persons/autocomplete","relation":{"direction":"IN","outName":"hasBirthPlace","inName":"isBirthPlaceOf","targetCollection":"persons","relationCollection":"relations","relationTypeId":"89907c10-081d-48f2-91b8-9810f966bcf0"}},{"name":"isDeathPlaceOf","type":"relation","quicksearch":"/v2.1/domain/persons/autocomplete","relation":{"direction":"IN","outName":"hasDeathPlace","inName":"isDeathPlaceOf","targetCollection":"persons","relationCollection":"relations","relationTypeId":"75b76004-579d-4339-9e03-7f229abc8cde"}},{"name":"isHomeOf","type":"relation","quicksearch":"/v2.1/domain/collectives/autocomplete","relation":{"direction":"IN","outName":"locatedAt","inName":"isHomeOf","targetCollection":"collectives","relationCollection":"relations","relationTypeId":"cbbd772e-1409-4b25-9625-8793120ff9c5"}},{"name":"isLocationLinkedToState","type":"relation","quicksearch":"/v2.1/domain/concepts/autocomplete","relation":{"direction":"IN","outName":"isStateLinkedToLocation","inName":"isLocationLinkedToState","targetCollection":"concepts","relationCollection":"relations","relationTypeId":"0e58684f-3bf9-45b2-b534-c5302d9ed8f2"}}]},"persons":{"collectionName":"persons","collectionLabel":"persons","description":"People with at least a name, birthdate and birthplace.","unknown":false,"relationCollection":false,"archetypeName":"person","properties":[{"name":"names","type":"names","options":["FORENAME","SURNAME","NAME_LINK","ROLE_NAME","GEN_NAME"]},{"name":"gender","type":"text"},{"name":"birthDate","type":"datable"},{"name":"deathDate","type":"datable"},{"name":"hasBirthPlace","type":"relation","quicksearch":"/v2.1/domain/locations/autocomplete","relation":{"direction":"OUT","outName":"hasBirthPlace","inName":"isBirthPlaceOf","targetCollection":"locations","relationCollection":"relations","relationTypeId":"89907c10-081d-48f2-91b8-9810f966bcf0"}},{"name":"hasDeathPlace","type":"relation","quicksearch":"/v2.1/domain/locations/autocomplete","relation":{"direction":"OUT","outName":"hasDeathPlace","inName":"isDeathPlaceOf","targetCollection":"locations","relationCollection":"relations","relationTypeId":"75b76004-579d-4339-9e03-7f229abc8cde"}},{"name":"isMemberOf","type":"relation","quicksearch":"/v2.1/domain/collectives/autocomplete","relation":{"direction":"IN","outName":"hasMember","inName":"isMemberOf","targetCollection":"collectives","relationCollection":"relations","relationTypeId":"595e6e24-a171-493b-9a4e-88da1e110c40"}},{"name":"isCreatorOf","type":"relation","quicksearch":"/v2.1/domain/documents/autocomplete","relation":{"direction":"IN","outName":"isCreatedBy","inName":"isCreatorOf","targetCollection":"documents","relationCollection":"relations","relationTypeId":"b2bb977b-63e6-46f9-99d7-9de55f82e0b1"}},{"name":"isFirstPersonInRelation","type":"relation","quicksearch":"/v2.1/domain/concepts/autocomplete","relation":{"direction":"IN","outName":"hasFirstPerson","inName":"isFirstPersonInRelation","targetCollection":"concepts","relationCollection":"relations","relationTypeId":"fcaed6c6-afdc-4345-a795-596c9f10a33b"}},{"name":"isSecondPersonInRelation","type":"relation","quicksearch":"/v2.1/domain/concepts/autocomplete","relation":{"direction":"IN","outName":"hasSecondPerson","inName":"isSecondPersonInRelation","targetCollection":"concepts","relationCollection":"relations","relationTypeId":"db9fb895-bfb1-4d78-8eeb-c56e3825e87a"}},{"name":"hasPersonState","type":"relation","quicksearch":"/v2.1/domain/concepts/autocomplete","relation":{"direction":"IN","outName":"isStateOfPerson","inName":"hasPersonState","targetCollection":"concepts","relationCollection":"relations","relationTypeId":"13f1ed51-c66a-4250-9016-591f247a3f98"}},{"name":"hasDataLine","type":"relation","quicksearch":"/v2.1/domain/concepts/autocomplete","relation":{"direction":"IN","outName":"isDataLineForPerson","inName":"hasDataLine","targetCollection":"concepts","relationCollection":"relations","relationTypeId":"e7096a9f-b7be-447c-b101-da7e86b0440b"}},{"name":"hasScientistBio","type":"relation","quicksearch":"/v2.1/domain/concepts/autocomplete","relation":{"direction":"IN","outName":"isScientistBioOf","inName":"hasScientistBio","targetCollection":"concepts","relationCollection":"relations","relationTypeId":"4f840df2-00c5-4643-849d-ac00dc791dfc"}}]}}')
+			// console.log(response)
+			var keys = Object.keys(response)
+			var properties= new Array
+			for(var i=0; i<keys.length; i++){
+				var k = Object.keys(response[keys[i]]['properties'])
+				// console.log
+				for(var ii=0; ii<k.length; ii++){
+					// if(response[keys[i]]['properties'][k[ii]].type=='relation'){
+						properties.push(response[keys[i]]['properties'][k[ii]].name)
+					// }
+				}
+			}
+			console.log(properties)
+			dispatch({type: "UPLOAD",
+					properties: properties})
 		}	
   	}
 };

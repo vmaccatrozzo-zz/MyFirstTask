@@ -30,6 +30,7 @@ const ProvTabs = ({ propValues , onValueClick, expandClick, extraLinkClick  }) =
                     key = {propValues.length}
                     propValues = {propValues['Other sources']} 
                     onValueClick = {onValueClick} 
+
                     expandClick = {expandClick} 
                     extraLinkClick = {extraLinkClick}
                 />

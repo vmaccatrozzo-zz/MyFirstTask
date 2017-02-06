@@ -21,6 +21,7 @@ const PropValueList = ({ propValues , onValueClick, expandClick, extraLinkClick}
 				onValueClick = {onValueClick}
 				expandClick = {expandClick}
 				extraLinkClick = {extraLinkClick}
+				hasExpandButton = {false}
 			/>)
 		)}
 	</div>	

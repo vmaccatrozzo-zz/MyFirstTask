@@ -5,7 +5,8 @@
   "main": "index.js",
   "scripts": {
     "start": "scripts/server.js",
-    "watch": "scripts/build.sh --watch"
+    "watch": "server=http://localhost:8080 scripts/build.sh --watch",
+    "build": "NODE_ENV=production server='' scripts/build.sh" 
   },
   "author": "",
   "license": "ISC",

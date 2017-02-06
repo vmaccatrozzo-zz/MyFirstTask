@@ -1,12 +1,30 @@
-import { createStore, applyMiddleware, combineReducers } from "redux";
+import { createStore, applyMiddleware, combineReducers, compose} from "redux";
 import thunkMiddleware from "redux-thunk";
-import sampleReducer from  "./sample-reducer";
+import sampleReducer from  "./reducer";
 
-const reducers = {
+const reducers = combineReducers({ 
 	sample: sampleReducer
+});
+
+// export default createStore(
+// 	reducers,
+// 	compose(applyMiddleware(thunkMiddleware))
+// );
+
+
+
+// import {createStore, applyMiddleware} from "redux";
+// import thunkMiddleware from "redux-thunk";
+    
+// import reducers from "./reducers";
+
+const logger = () => next => action => {
+  if (action.hasOwnProperty("type")) {
+    console.log("[REDUX]", action.type, action);
+  }
+
+  return next(action);
 };
 
-export default createStore(
-	combineReducers(reducers),
-	applyMiddleware(thunkMiddleware)
-);
+let createStoreWithMiddleware = applyMiddleware(/*logger,*/ thunkMiddleware)(createStore);
+export default createStoreWithMiddleware(reducers);
