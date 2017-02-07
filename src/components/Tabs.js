@@ -22,6 +22,7 @@ const ProvTabs = ({ propValues , onValueClick, expandClick, extraLinkClick  }) =
                             onValueClick = {onValueClick} 
                             expandClick = {expandClick} 
                             extraLinkClick = {extraLinkClick}
+                            hasExpandButton={true}
                         />
                     </TabPanel>
             )}
@@ -30,7 +31,7 @@ const ProvTabs = ({ propValues , onValueClick, expandClick, extraLinkClick  }) =
                     key = {propValues.length}
                     propValues = {propValues['Other sources']} 
                     onValueClick = {onValueClick} 
-
+                    hasExpandButton = {false}
                     expandClick = {expandClick} 
                     extraLinkClick = {extraLinkClick}
                 />
