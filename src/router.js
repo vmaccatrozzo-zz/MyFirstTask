@@ -21,7 +21,8 @@ function makeViewModel(state) {
 	return {
  		data: state.sample.data,
 		uploadDatajs: state.sample.uploadDatajs,
-		propertyList: state.sample.propertyList
+		propertyList: state.sample.propertyList,
+		errorText: state.sample.errorText
 	}
 }
 

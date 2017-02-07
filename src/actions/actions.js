@@ -15,13 +15,13 @@ var primary_data = new Array();
 
 
 function fix_url(url){
-
+	// http://data.bnf.fr/ark:/12148/cb119854851#foaf:Person
+	// http://data.bnf.fr/11898585/dante_alighieri/rdf.xml
 	var url_fixed = url;
 	var entityURL = url;
 
 	if (url.indexOf('http://viaf')==0){
 		url_fixed = url+'/rdf.xml'
-		var entityURL = url
 	}
 	if(url.indexOf('http://dbpedia.org/page')==0){
 		url_fixed = url_fixed.replace('page','resource')
@@ -35,45 +35,61 @@ function fix_url(url){
 		var url_fixed = 'https://www.wikidata.org/wiki/Special:EntityData/' +entityID +'.rdf'
 		var entityURL = 'http://www.wikidata.org/entity/' + entityID
 	}
+
+	if(url.indexOf('http://d-nb.info/gnd/')==0){
+		url_fixed = url +'/about/lds'	
+	}
+
+	if(url.indexOf('http://id.loc.gov/')==0){
+		url_fixed = url+'.rdf'
+	}
+
+	// if(url.indexOf('http://data.bnf.fr/')==0){
+	// 	var splittedURL = url.split('/')
+	// 	var entityID = splittedURL[splittedURL.length-1].replace('cb','').replace('#foaf:Person','')
+	// 	entityID = entityID.substring(0, entityID.length-1)
+	// 	url_fixed = 'http://data.bnf.fr/'+entityID+'/'
+	// }
 	return([url_fixed,entityURL])
 }
 
 function pushTriple(triples_array, object_uri, provenance, property_uri, subject_uri){
-	
-	var propertyLabel = getPropertyLabel(property_uri)
-	var objectLabel = getObjectLabel(object_uri)
-	
-	if(propertyLabel == 'sameAs'){
-		if(uploadedSources.indexOf(object_uri)==-1){
-			var row = {property: propertyLabel, object: objectLabel, provenance: provenance, selected: false, property_uri:property_uri, object_uri: object_uri, subject_uri: subject_uri, hasLink: true}
-			if(Object.keys(triples_array).indexOf('Other sources') == -1){
-				triples_array['Other sources'] = new Map()
-			}
-			if(Object.keys(triples_array['Other sources']).indexOf('sameAs')==-1){
-				triples_array['Other sources']['sameAs']= {list: new Array(), isExpanded: true}
-			}
-			var flag = false
-			for(var i = 0; i < triples_array['Other sources']['sameAs'].list.length; i++){
-				if(triples_array['Other sources']['sameAs'].list[i].object == row.object){
-					triples_array['Other sources']['sameAs'].list[i].provenance += ', ' + row.provenance
-					flag = true
-					break
+	if(typeof object_uri == 'string'){
+		var propertyLabel = getPropertyLabel(property_uri)
+		var objectLabel = getObjectLabel(object_uri)
+		
+		if(propertyLabel == 'sameAs'){
+			if(uploadedSources.indexOf(object_uri)==-1){
+				var row = {property: propertyLabel, object: objectLabel, provenance: provenance, selected: false, property_uri:property_uri, object_uri: object_uri, subject_uri: subject_uri, hasLink: true}
+				if(Object.keys(triples_array).indexOf('Other sources') == -1){
+					triples_array['Other sources'] = new Map()
+				}
+				if(Object.keys(triples_array['Other sources']).indexOf('sameAs')==-1){
+					triples_array['Other sources']['sameAs']= {list: new Array(), isExpanded: true}
+				}
+				var flag = false
+				for(var i = 0; i < triples_array['Other sources']['sameAs'].list.length; i++){
+					if(triples_array['Other sources']['sameAs'].list[i].object == row.object){
+						triples_array['Other sources']['sameAs'].list[i].provenance += ', ' + row.provenance
+						flag = true
+						break
+					}
+				}
+				if (flag == false){
+					triples_array['Other sources']['sameAs'].list.push(row)
 				}
 			}
-			if (flag == false){
-				triples_array['Other sources']['sameAs'].list.push(row)
+		}else{
+			if(Object.keys(triples_array).indexOf(provenance)==-1){
+				triples_array[provenance] = new Map()
 			}
+			if(Object.keys(triples_array[provenance]).indexOf(propertyLabel)==-1){
+				triples_array[provenance][propertyLabel] = new Map
+				triples_array[provenance][propertyLabel]= {list: new Array(), isExpanded: false}
+			}
+			var row = {property: propertyLabel, object: objectLabel, provenance: provenance, selected: false, property_uri:property_uri, object_uri: object_uri, subject_uri: subject_uri, hasLink: false}
+			triples_array[provenance][propertyLabel].list.push(row) 
 		}
-	}else{
-		if(Object.keys(triples_array).indexOf(provenance)==-1){
-			triples_array[provenance] = new Map()
-		}
-		if(Object.keys(triples_array[provenance]).indexOf(propertyLabel)==-1){
-			triples_array[provenance][propertyLabel] = new Map
-			triples_array[provenance][propertyLabel]= {list: new Array(), isExpanded: false}
-		}
-		var row = {property: propertyLabel, object: objectLabel, provenance: provenance, selected: false, property_uri:property_uri, object_uri: object_uri, subject_uri: subject_uri, hasLink: false}
-		triples_array[provenance][propertyLabel].list.push(row) 
 	}
 	return triples_array
 }
@@ -106,11 +122,13 @@ function extractSource(source){
 
 function getObjectLabel(url){
 	var label = url
-	url = url.replace('prop/direct','entity')
-	url = url.replace('prop','entity')
-	if((typeof (Labels)) !='undefined'){
-		if(typeof (Labels[url]) !='undefined'){
-			label = Labels[url]	
+	if(typeof url == 'string'){
+		url = url.replace('prop/direct','entity')
+		url = url.replace('prop','entity')
+		if((typeof (Labels)) !='undefined'){
+			if(typeof (Labels[url]) !='undefined'){
+				label = Labels[url]	
+			}
 		}
 	}
 	return label
@@ -158,17 +176,24 @@ function uniqueArrayObjects(array2sort){
 				if(result.indexOf(array2sort[i].value)== -1){
 					result.push(array2sort[i].value)
 				}
+			}else{
+				if(result.indexOf(array2sort[i].value)== -1){
+					result.push(array2sort[i].value)
+					break
+				}
 			}
 		}else{
+			
 			if(result.indexOf(array2sort[i].value)== -1){
 				result.push(array2sort[i].value)
 			}
 		}
 	}
+	
 	return result
 };
 
-function getData(subject, property, objects, prov, primary_data){	
+function getData(subject, property, objects, prov, primary_data){
 	if (properties2skip.indexOf(property) ==-1 & property.indexOf('http://www.iana.org')!=0){
 		var unique_objects = uniqueArrayObjects(objects)
 		for(var i=0; i<unique_objects.length; i++){
@@ -176,6 +201,7 @@ function getData(subject, property, objects, prov, primary_data){
 			primary_data = pushTriple(primary_data, object, prov, property, subject)	
 		}	
 	}
+	
 	return(primary_data)
 };
 
@@ -189,7 +215,8 @@ export default function (navigateTo, dispatch) {
 			url = fix_url(url)
 			var entityURL = url[1]
 			var url_complete = url[0]
-
+			console.log(url_complete)
+			
 			fetcher.nowOrWhenFetched(url_complete, function (ok, body, xhr) {
 				if (!ok) {
 					console.log("Oops, something happened and couldn't fetch data");
@@ -282,7 +309,12 @@ export default function (navigateTo, dispatch) {
 			var entityURL = url[1]
 			fetcher.nowOrWhenFetched(new_url, function(ok, body, xhr) {
 				if (!ok) {
+					var prov = extractSource(entityURL)
+					
 					console.log("Oops, something happened and couldn't fetch data");
+					dispatch({type: "NEW_SOURCE_ERROR",
+							  uploaded: uploadedSources,
+							  errorText: "Resource not available."})
 				} else {
 					
 					var labels_data = store.statementsMatching(undefined,$rdf.sym('http://www.w3.org/2000/01/rdf-schema#label'),undefined)																														
@@ -306,9 +338,8 @@ export default function (navigateTo, dispatch) {
 					for(var i=0; i<unique_prop.length; i++){    
 						var prop = unique_prop[i];
 						var objects = store.each(s,$rdf.sym(prop),undefined);
-						newData = getData(new_url,prop,objects,prov,newData)	
+						newData = getData(new_url,prop,objects,prov,newData)
 				}
-				
 				dispatch({type: "INCLUDE_NEW_SOURCE", 
 						uploaded: uploadedSources,
 						data: newData
