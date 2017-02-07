@@ -1,17 +1,18 @@
 import React, { PropTypes } from 'react'
 import PropValue from './PropValue'
 
-const PropValueIntermezzo = ({propertyList, isExpanded, onValueClick, expandClick, extraLinkClick, hasExpandButton}) => { 
+const PropValueIntermezzo = ({propertyList, isExpanded, onValueClick, expandClick, extraLinkClick}) => { 
     
     if (!(propertyList)) {
         return null;
     }
-    
+   
     return (
         <div className='row-fluid text-left'>
             <PropValue
                 {...propertyList[0]}
-                hasExpandButton={hasExpandButton}
+
+                hasExpandButton={propertyList[0].property ==='sameAs' ? false : propertyList.length>1}
                 button_type={isExpanded ? "glyphicon glyphicon-minus" : "glyphicon glyphicon-plus"}
                 hasLink_button={propertyList[0].hasLink ? "glyphicon glyphicon-open" : null}
                 onClick={() => onValueClick(propertyList[0].property, 0, propertyList[0].provenance)}
@@ -24,7 +25,6 @@ const PropValueIntermezzo = ({propertyList, isExpanded, onValueClick, expandClic
                         <PropValue
                             key={idx}
                             {...propvalue}
-                            hasExpandButton={hasExpandButton}
                             hasLink_button={propvalue.hasLink ? "glyphicon glyphicon-open" : null}
                             onClick={() => onValueClick(propvalue.property, idx, propvalue.provenance)}
                             extraLinkClick={() => extraLinkClick(propvalue.object)}

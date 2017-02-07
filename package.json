@@ -1,30 +1,35 @@
 {
-  "name": "react-redux-scaffold",
-  "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
+  "name": "excel-import-mockup",
+  "version": "0.0.0",
+  "author": {
+    "name": "René van der Ark",
+    "email": "rene.van.der.ark@huygens.knaw.nl"
+  },
+  "repository": {
+    "type": "git",
+    "url": ""
+  },
   "scripts": {
     "start": "scripts/server.js",
+    "build": "NODE_ENV=production server='' scripts/build.sh",
+    "timbuild": "server='' scripts/build.sh",
     "watch": "server=http://localhost:8080 scripts/build.sh --watch",
-    "build": "NODE_ENV=production server='' scripts/build.sh" 
+    "watch:mock": "export USE_MOCK=true; export server='http://servermock'; scripts/build.sh --watch"
   },
-  "author": "",
-  "license": "ISC",
   "dependencies": {
-    "jsonld": "^0.4.11",
-    "proxy-middleware": "^0.15.0",
-    "rdflib": "^0.12.1",
-    "rdfstore": "^0.9.17",
-    "react": "^15.3.2",
-    "react-dom": "^15.3.2",
+    "classnames": "^2.2.5",
+    "merge-options": "0.0.64",
+    "react": "^0.14.7",
+    "react-dom": "^0.14.7",
     "react-redux": "^4.4.5",
-    "react-router": "^2.8.1",
-    "react-tabs": "^0.8.2",
-    "react-thunk": "^1.0.0",
-    "redux": "^3.6.0",
-    "redux-thunk": "^2.1.0"
+    "react-router": "^2.6.1",
+    "redux": "^3.2.1",
+    "redux-thunk": "^1.0.3",
+    "xhr": "^2.2.0"
   },
   "devDependencies": {
+    "@kadira/storybook": "^1.41.0",
+    "babel-core": "^6.17.0",
     "babel-eslint": "^6.1.2",
     "babel-plugin-transform-es2015-destructuring": "^6.9.0",
     "babel-plugin-transform-object-assign": "^6.8.0",
@@ -34,10 +39,21 @@
     "babelify": "^7.3.0",
     "browser-sync": "^2.14.0",
     "browserify": "^13.1.0",
+    "css-loader": "^0.23.1",
     "envify": "^3.4.1",
     "eslint": "^1.5.1",
     "eslint-plugin-react": "^3.16.1",
+    "expect": "^1.14.0",
+    "file-loader": "^0.9.0",
     "lodash.debounce": "^3.1.1",
-    "watchify": "^3.7.0"
+    "mocha": "^2.4.5",
+    "nib": "^1.1.0",
+    "nodemon": "^1.8.1",
+    "raw-loader": "^0.5.1",
+    "style-loader": "^0.13.1",
+    "stylus": "^0.53.0",
+    "stylus-loader": "^2.1.2",
+    "watchify": "^3.7.0",
+    "xhr-mock": "^1.7.0"
   }
 }

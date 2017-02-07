@@ -25,6 +25,7 @@ export default function(state=initialState, action) {
 			}
 
 		case "EXPAND_ROWS":
+			console.log('here')
 			newData = Object.assign({}, state.data)
 			if([action.property]!='sameAs'){
 				newData[action.provenance][action.property].isExpanded  = !state.data[action.provenance][action.property].isExpanded 

@@ -1,7 +1,7 @@
 import React, { PropTypes } from 'react'
 import PropValueIntermezzo from './PropValueIntermezzo'
 
-const PropValueList = ({ propValues , onValueClick, expandClick, extraLinkClick, hasExpandButton}) => {
+const PropValueList = ({ propValues , onValueClick, expandClick, extraLinkClick}) => {
 	
 	return(
 	
@@ -21,7 +21,6 @@ const PropValueList = ({ propValues , onValueClick, expandClick, extraLinkClick,
 				onValueClick = {onValueClick}
 				expandClick = {expandClick}
 				extraLinkClick = {extraLinkClick}
-				hasExpandButton = {hasExpandButton}
 			/>)
 		)}
 	</div>	
