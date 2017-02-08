@@ -18,8 +18,6 @@ export default function (state = initialState, action) {
 				isFetching: false
 			}
 
-
-
 		case "SELECT_VALUE":
 			let newData = Object.assign({}, state.data)
 			if ([action.property] != 'sameAs') {
@@ -40,25 +38,30 @@ export default function (state = initialState, action) {
 					data: newData
 				};
 			}
+			return {
+					...state,
+					data: newData
+				};
 		case "NEW_SOURCE_ERROR":
 			var uploadedSources = action.uploaded
-			var OldSameAs = Object.assign({}, state.data);
-			var keys = Object.keys(OldSameAs['Other sources']['sameAs'])
-			for (var k = 0; k < keys.length; k++) {
-				var dataList = OldSameAs['Other sources']['sameAs'][keys[k]]
-				for (var d = 0; d < dataList.length; d++) {
-					if (uploadedSources.indexOf(OldSameAs['Other sources']['sameAs'][keys[k]][d].object) != -1) {
-						OldSameAs['Other sources']['sameAs'][keys[k]].splice(d, 1)
+			if(typeof uploadedSources != 'undefined'){
+				var OldSameAs = Object.assign({}, state.data);
+				var keys = Object.keys(OldSameAs['Other sources']['sameAs'])
+				for (var k = 0; k < keys.length; k++) {
+					var dataList = OldSameAs['Other sources']['sameAs'][keys[k]]
+					for (var d = 0; d < dataList.length; d++) {
+						if (uploadedSources.indexOf(OldSameAs['Other sources']['sameAs'][keys[k]][d].object) != -1) {
+							OldSameAs['Other sources']['sameAs'][keys[k]].splice(d, 1)
+						}
 					}
 				}
-			}
-			var mergedData = Object.assign({}, state.data, OldSameAs)
-			return {
-				...state,
-				errorText: true,
-				data: mergedData,
-				isFetching: false
-			}
+				var mergedData = Object.assign({}, state.data, OldSameAs)
+				return {
+					...state,
+					errorText: true,
+					data: mergedData,
+					isFetching: false
+				}}
 
 		case "LOADING":
 			return Object.assign({}, state, {
