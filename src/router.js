@@ -23,7 +23,7 @@ function makeViewModel(state) {
 		uploadDatajs: state.sample.uploadDatajs,
 		propertyList: state.sample.propertyList,
 		errorText: state.sample.errorText,
-		isFetching: state.sample.isFetching 
+		isFetching: state.sample.isFetching
 	}
 }
 

@@ -319,7 +319,6 @@ export default function (navigateTo, dispatch) {
 			dispatch({
 				type: "LOADING",
 			})
-			// console.log(isFetching)
 			const store = $rdf.graph()
 			const fetcher = new $rdf.Fetcher(store, timeout)
 			var newData = new Array()
@@ -370,6 +369,11 @@ export default function (navigateTo, dispatch) {
 			})
 		},
 
+		closeErrorDiv: function(){
+			dispatch({
+				type:"CLOSE_ERROR_DIV"
+			})
+		},
 		expandClick: function (property, provenance) {
 			dispatch({
 				type: "EXPAND_ROWS",

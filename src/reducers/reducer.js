@@ -65,6 +65,11 @@ export default function (state = initialState, action) {
     			isFetching: true
 			})
 
+		case "CLOSE_ERROR_DIV":
+			return Object.assign({}, state, {
+    			errorText: false
+			})
+
 		case "INCLUDE_NEW_SOURCE":
 			if (typeof (action.data) != 'undefined') {
 				var uploadedSources = action.uploaded;

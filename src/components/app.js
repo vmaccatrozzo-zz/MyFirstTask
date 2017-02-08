@@ -57,7 +57,7 @@ class App extends React.Component {
 					<div className="form-group text-right">
 						<button type="submit" onClick={this.props.uploadData} className="btn btn-default"> Continue </button>
 					</div>
-					<ProvTabs propValues={this.props.data} onValueClick={this.props.onValueClick} expandClick={this.props.expandClick} extraLinkClick={this.props.onLinkClick} errorText={this.props.errorText} isFetching = {this.props.isFetching}/>
+					<ProvTabs propValues={this.props.data} onValueClick={this.props.onValueClick} expandClick={this.props.expandClick} extraLinkClick={this.props.onLinkClick} errorText={this.props.errorText} isFetching = {this.props.isFetching} closeErrorDiv = {this.props.closeErrorDiv}/>
 				</div>
 			);
 		} else {
