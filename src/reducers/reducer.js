@@ -1,17 +1,21 @@
 const initialState = {};
 
 export default function (state = initialState, action) {
+	
 	switch (action.type) {
+		
 		case "RECEIVE_URL":
 			return {
 				...state,
-				data: action.data
+				data: action.data,
+				isFetching: false
 			};
 
 		case "NO_DATA":
 			return {
 				...state,
-				data: action.data
+				data: action.data,
+				isFetching: false
 			}
 
 
@@ -48,14 +52,18 @@ export default function (state = initialState, action) {
 					}
 				}
 			}
-			
 			var mergedData = Object.assign({}, state.data, OldSameAs)
-
 			return {
 				...state,
-				errorText: action.errorText,
-				data: mergedData
+				errorText: true,
+				data: mergedData,
+				isFetching: false
 			}
+
+		case "LOADING":
+			return Object.assign({}, state, {
+    			isFetching: true
+			})
 
 		case "INCLUDE_NEW_SOURCE":
 			if (typeof (action.data) != 'undefined') {
@@ -97,7 +105,9 @@ export default function (state = initialState, action) {
 
 				return {
 					...state,
-					data: mergedData
+					data: mergedData,
+					isFetching: false,
+					errorText:false
 				}
 			};
 

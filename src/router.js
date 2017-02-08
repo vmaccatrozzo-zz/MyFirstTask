@@ -22,7 +22,8 @@ function makeViewModel(state) {
  		data: state.sample.data,
 		uploadDatajs: state.sample.uploadDatajs,
 		propertyList: state.sample.propertyList,
-		errorText: state.sample.errorText
+		errorText: state.sample.errorText,
+		isFetching: state.sample.isFetching 
 	}
 }
 
